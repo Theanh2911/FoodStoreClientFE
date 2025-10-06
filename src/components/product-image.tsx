@@ -4,7 +4,7 @@ import * as React from "react";
 import { getPlaceholderImage } from "@/lib/api";
 
 // Backend base URL for image processing
-const BACKEND_BASE_URL = 'http://192.168.1.15:8080';
+const BACKEND_BASE_URL = 'http://192.168.1.13:8080';
 
 interface ProductImageProps {
   imageUrl: string | null;

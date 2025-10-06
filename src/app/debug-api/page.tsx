@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { apiService } from "@/lib/api";
 
 // Get the API base URL from the api service
-const API_BASE_URL = 'http://192.168.1.15:8080/api';
-const BACKEND_BASE_URL = 'http://192.168.1.15:8080';
+const API_BASE_URL = 'http://192.168.1.13:8080/api';
+const BACKEND_BASE_URL = 'http://192.168.1.13:8080';
 
 export default function DebugApiPage() {
   const [results, setResults] = React.useState<any[]>([]);
