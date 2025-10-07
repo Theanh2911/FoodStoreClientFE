@@ -133,7 +133,7 @@ export default function TaoDonHangPage() {
       }
 
       // Success - order created
-      console.log('Order created successfully:', result.data);
+      // Order created successfully
       
       // Close modal and reset state
       setShowConfirmModal(false);
@@ -144,7 +144,7 @@ export default function TaoDonHangPage() {
       // router.push(`/don-hang-thanh-cong?orderId=${result.data.orderId}`);
       
     } catch (error) {
-      console.error('Failed to create order:', error);
+      // Failed to create order
       setSubmitError('Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
       setIsSubmitting(false);
     }
@@ -245,7 +245,7 @@ export default function TaoDonHangPage() {
                                   imageUrl={product.image}
                                   productName={product.name}
                                   categoryName={product.category.name}
-                                  className="w-12 h-12"
+                                  className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
                                 />
                                 <div className="flex-1">
                                   <CardTitle className="text-base">{product.name}</CardTitle>

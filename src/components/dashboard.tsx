@@ -101,7 +101,7 @@ export function Dashboard() {
                           imageUrl={item.image}
                           productName={item.name}
                           categoryName={item.category.name}
-                          className="w-12 h-12"
+                          className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
                         />
                         <div>
                           <CardTitle className="text-lg">{item.name}</CardTitle>

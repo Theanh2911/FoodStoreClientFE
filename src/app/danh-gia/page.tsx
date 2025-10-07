@@ -37,7 +37,7 @@ export default function DanhGiaPage() {
     }
 
     // Here you can add API call to submit the review
-    console.log('Review submitted:', {
+    // Review submitted: {
       rating,
       comment: reviewText,
       timestamp: new Date().toISOString()

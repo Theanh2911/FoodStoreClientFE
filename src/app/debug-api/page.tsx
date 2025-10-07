@@ -30,7 +30,7 @@ export default function DebugApiPage() {
 
     // Test 1: Basic API endpoint
     try {
-      console.log('Testing API connection...');
+      // Testing API connection
       const response = await fetch(`${API_BASE_URL}/menu/products/getAll`);
       
       if (response.ok) {
