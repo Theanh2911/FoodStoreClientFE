@@ -4,8 +4,8 @@ import * as React from "react";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Loader2, AlertCircle, ShoppingCart } from "lucide-react";
-import { apiService, formatPrice, getPlaceholderImage, CATEGORY_IDS, Product } from "@/lib/api";
+import { Loader2, AlertCircle, ShoppingCart } from "lucide-react";
+import { apiService, formatPrice, CATEGORY_IDS, Product } from "@/lib/api";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
 
@@ -100,7 +100,7 @@ export default function DoAnPage() {
                           imageUrl={item.image}
                           productName={item.name}
                           categoryName={item.category.name}
-                          className="w-12 h-12"
+                          className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
                         />
                         <div>
                           <CardTitle className="text-lg">{item.name}</CardTitle>

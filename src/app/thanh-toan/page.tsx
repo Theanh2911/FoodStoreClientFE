@@ -29,7 +29,7 @@ export default function ThanhToanPage() {
       setCopiedField(fieldName);
       setTimeout(() => setCopiedField(null), 2000);
     } catch (err) {
-      console.error('Failed to copy: ', err);
+      // Failed to copy
     }
   };
 

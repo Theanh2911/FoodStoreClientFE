@@ -59,7 +59,7 @@ class ApiService {
       const data = await response.json();
       return { data };
     } catch (error) {
-      console.error('API Request failed:', error);
+      // API Request failed
       return { 
         data: [] as unknown as T, 
         error: error instanceof Error ? error.message : 'Unknown error occurred' 
@@ -84,7 +84,7 @@ class ApiService {
     categoryId: number;
     image?: string;
   }): Promise<ApiResponse<Product>> {
-    console.log('🚀 Adding new product:', productData);
+    // Adding new product
     
     return this.fetchWithErrorHandling<Product>(`${API_BASE_URL}/menu/products/create`, {
       method: 'POST',
@@ -100,7 +100,7 @@ class ApiService {
     image: string;
     categoryId: number;
   }): Promise<ApiResponse<Product>> {
-    console.log('🔄 Updating product:', productId, productData);
+    // Updating product
     
     return this.fetchWithErrorHandling<Product>(`${API_BASE_URL}/menu/products/update/${productId}`, {
       method: 'PUT',
@@ -117,7 +117,7 @@ class ApiService {
 
   // Submit order to backend
   async createOrder(orderData: CreateOrderRequest): Promise<ApiResponse<Order>> {
-    console.log('🚀 Creating new order:', orderData);
+    // Creating new order
     
     return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create`, {
       method: 'POST',

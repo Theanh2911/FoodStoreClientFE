@@ -83,6 +83,13 @@ export default function DoAnThemPage() {
           </div>
         )}
 
+        <ProductImage
+            imageUrl={item.image}
+            productName={item.name}
+            categoryName={item.category.name}
+            className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
+        />
+
         {/* Additional Items Grid */}
         {!isLoading && !error && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -100,7 +107,7 @@ export default function DoAnThemPage() {
                           imageUrl={item.image}
                           productName={item.name}
                           categoryName={item.category.name}
-                          className="w-12 h-12"
+                          className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
                         />
                         <div>
                           <CardTitle className="text-lg">{item.name}</CardTitle>
