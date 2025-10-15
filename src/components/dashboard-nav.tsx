@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, CreditCard, Star, UtensilsCrossed, Coffee, Plus } from "lucide-react";
+import { ChevronDown, CreditCard, History, UtensilsCrossed, Coffee, Plus } from "lucide-react";
 
 export function DashboardNav() {
   const router = useRouter();
@@ -24,13 +24,12 @@ export function DashboardNav() {
     router.push("/thanh-toan");
   };
 
-  const handleReviewClick = () => {
-    router.push("/danh-gia");
+  const handleHistoryClick = () => {
+    router.push("/lich-su");
   };
 
   return (
     <nav className="sticky top-0 z-50 flex items-center justify-between p-3 sm:p-4 bg-white border-b border-gray-200 shadow-sm">
-      {/* Logo/Brand (Left side) */}
       <div className="flex items-center">
         <h1 
           className="text-lg sm:text-xl font-bold text-gray-800 truncate cursor-pointer hover:text-blue-600 transition-colors"
@@ -97,11 +96,11 @@ export function DashboardNav() {
           variant="ghost" 
           size="sm"
           className="flex items-center space-x-1 sm:space-x-2 hover:bg-gray-100 transition-colors px-2 sm:px-3"
-          onClick={handleReviewClick}
+          onClick={handleHistoryClick}
         >
-          <Star className="h-4 w-4" />
-          <span className="hidden sm:inline">Đánh giá</span>
-          <span className="sm:hidden text-xs">Đánh giá</span>
+          <History className="h-4 w-4" />
+          <span className="hidden sm:inline">Lịch sử</span>
+          <span className="sm:hidden text-xs">Lịch sử</span>
         </Button>
       </div>
 

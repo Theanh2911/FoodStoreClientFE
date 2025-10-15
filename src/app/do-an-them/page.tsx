@@ -68,7 +68,6 @@ export default function DoAnThemPage() {
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="flex items-center justify-center py-8">
             <AlertCircle className="h-8 w-8 text-red-600" />
@@ -82,13 +81,6 @@ export default function DoAnThemPage() {
             </Button>
           </div>
         )}
-
-        <ProductImage
-            imageUrl={item.image}
-            productName={item.name}
-            categoryName={item.category.name}
-            className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16"
-        />
 
         {/* Additional Items Grid */}
         {!isLoading && !error && (
