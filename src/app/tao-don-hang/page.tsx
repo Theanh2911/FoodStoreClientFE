@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, ArrowLeft, Filter, Receipt, CheckCircle } from "lucide-react";
 import { apiService, formatPrice, Product, CreateOrderRequest, OrderItem } from "@/lib/api";
+import { getTableSession } from "@/lib/session";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
 
@@ -110,10 +111,25 @@ export default function TaoDonHangPage() {
     setSubmitError(null);
 
     try {
+      // Get session info
+      const session = getTableSession();
+      
+      if (!session) {
+        setSubmitError('Không tìm thấy thông tin phiên. Vui lòng quét mã QR lại.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Get user info from localStorage (if logged in)
+      const userDataStr = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
+      const userData = userDataStr ? JSON.parse(userDataStr) : null;
+
       // Prepare order data for API
       const orderData: CreateOrderRequest = {
-        name: "Khách hàng", // You can add a form to collect this info
-        tableNumber: 0, // You can add a form to collect table number
+        name: userData?.name || "Khách hàng",
+        tableNumber: session.tableNumber,
+        sessionId: session.sessionId,
+        userId: userData?.userId?.toString(),
         total: calculateTotal(),
         items: orderItems.map(item => ({
           productId: item.productId,
