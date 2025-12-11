@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, ArrowLeft, Filter, Receipt, CheckCircle } from "lucide-react";
-import { apiService, formatPrice, Product, CreateOrderRequest, OrderItem } from "@/lib/api";
+import { apiService, formatPrice, Product, AuthenticatedOrderRequest, GuestOrderRequest, OrderItemRequest } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
@@ -124,23 +124,41 @@ export default function TaoDonHangPage() {
       const userDataStr = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
       const userData = userDataStr ? JSON.parse(userDataStr) : null;
 
-      // Prepare order data for API
-      const orderData: CreateOrderRequest = {
-        name: userData?.name || "Khách hàng",
-        tableNumber: session.tableNumber,
-        sessionId: session.sessionId,
-        userId: userData?.userId?.toString(),
-        total: calculateTotal(),
-        items: orderItems.map(item => ({
-          productId: item.productId,
-          name: item.name,
-          quantity: item.quantity,
-          note: "" // You can add notes functionality later
-        }))
-      };
+      // Prepare items data (same structure for both APIs)
+      const items: OrderItemRequest[] = orderItems.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        note: "" // You can add notes functionality later
+      }));
 
-      // Submit order to backend
-      const result = await apiService.createOrder(orderData);
+      let result;
+
+      // Check if user is authenticated
+      if (userData) {
+        // User is logged in - Use authenticated API
+        console.log('Creating order for authenticated user:', userData.name);
+        
+        const orderData: AuthenticatedOrderRequest = {
+          sessionId: session.sessionId,
+          tableNumber: session.tableNumber,
+          total: calculateTotal(),
+          items: items
+        };
+
+        result = await apiService.createAuthenticatedOrder(orderData);
+      } else {
+        // Guest user - Use guest API
+        console.log('Creating order for guest user at table:', session.tableNumber);
+        
+        const orderData: GuestOrderRequest = {
+          name: `Khách vãng lai bàn ${session.tableNumber}`,
+          sessionId: session.sessionId,
+          total: calculateTotal(),
+          items: items
+        };
+
+        result = await apiService.createGuestOrder(orderData);
+      }
 
       if (result.error) {
         setSubmitError(result.error);
@@ -149,7 +167,7 @@ export default function TaoDonHangPage() {
       }
 
       // Success - order created
-      // Order created successfully
+      console.log('Order created successfully:', result.data);
       
       // Close modal and reset state
       setShowConfirmModal(false);
@@ -160,7 +178,7 @@ export default function TaoDonHangPage() {
       // router.push(`/don-hang-thanh-cong?orderId=${result.data.orderId}`);
       
     } catch (error) {
-      // Failed to create order
+      console.error('Error creating order:', error);
       setSubmitError('Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
       setIsSubmitting(false);
     }

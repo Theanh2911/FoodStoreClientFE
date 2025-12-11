@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://192.168.1.13:8080/api';
+const API_BASE_URL = 'http://192.168.1.10:8080/api';
 
 export interface Product {
   productId: number;
@@ -18,11 +18,35 @@ export interface OrderItem {
   note?: string;
 }
 
+// Legacy - Keep for backward compatibility
 export interface CreateOrderRequest {
   name: string;
   tableNumber: number;
+  sessionId: string;
+  userId?: string;
   total: number;
   items: OrderItem[];
+}
+
+// New API structures
+export interface OrderItemRequest {
+  productId: number;
+  quantity: number;
+  note?: string;
+}
+
+export interface AuthenticatedOrderRequest {
+  sessionId: string;
+  tableNumber: number;
+  total: number;
+  items: OrderItemRequest[];
+}
+
+export interface GuestOrderRequest {
+  name: string;
+  sessionId: string;
+  total: number;
+  items: OrderItemRequest[];
 }
 
 export interface Order {
@@ -56,6 +80,9 @@ export interface AuthResponse {
   name: string;
   phoneNumber: string;
   message: string;
+  token?: string;
+  refreshToken?: string;
+  role?: string;
 }
 
 export interface UserOrderItem {
@@ -75,6 +102,15 @@ export interface UserOrder {
   orderTime: string;
   status: string;
   items: UserOrderItem[];
+}
+
+export interface BankAccount {
+  id: number;
+  bankName: string;
+  accountNumber: string;
+  accountHolder: string;
+  qrCodeImageUrl: string | null;
+  status: string;
 }
 
 class ApiService {
@@ -144,9 +180,35 @@ class ApiService {
     });
   }
 
+  // Legacy method - Keep for backward compatibility
   async createOrder(orderData: CreateOrderRequest): Promise<ApiResponse<Order>> {
-
     return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create`, {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+    });
+  }
+
+  // New method for authenticated users
+  async createAuthenticatedOrder(orderData: AuthenticatedOrderRequest): Promise<ApiResponse<Order>> {
+    const token = localStorage.getItem('accessToken');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create/authenticated`, {
+      method: 'POST',
+      body: JSON.stringify(orderData),
+      headers,
+    });
+  }
+
+  // New method for guest users
+  async createGuestOrder(orderData: GuestOrderRequest): Promise<ApiResponse<Order>> {
+    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create/guest`, {
       method: 'POST',
       body: JSON.stringify(orderData),
     });
@@ -161,7 +223,7 @@ class ApiService {
   }
 
   async register(userData: AuthRegisterRequest): Promise<ApiResponse<AuthResponse>> {
-    return this.fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/register`, {
+    return this.fetchWithErrorHandling<AuthResponse>(`${API_BASE_URL}/auth/client-register`, {
       method: 'POST',
       body: JSON.stringify(userData),
     });
@@ -175,7 +237,38 @@ class ApiService {
   }
 
   async getUserOrders(userId: number): Promise<ApiResponse<UserOrder[]>> {
-    return this.fetchWithErrorHandling<UserOrder[]>(`${API_BASE_URL}/auth/orders/${userId}`);
+    const token = localStorage.getItem('accessToken');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    
+    return this.fetchWithErrorHandling<UserOrder[]>(`${API_BASE_URL}/auth/orders/${userId}`, {
+      headers,
+    });
+  }
+
+  async getActiveBankAccount(): Promise<ApiResponse<BankAccount>> {
+    return this.fetchWithErrorHandling<BankAccount>(`${API_BASE_URL}/banks/active`);
+  }
+
+  async logout(): Promise<ApiResponse<{ message: string }>> {
+    const token = localStorage.getItem('accessToken');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    return this.fetchWithErrorHandling<{ message: string }>(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers,
+    });
   }
 }
 

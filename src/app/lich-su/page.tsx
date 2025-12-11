@@ -24,6 +24,9 @@ export default function LichSuPage() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [user, setUser] = React.useState<User | null>(null);
   const [orders, setOrders] = React.useState<UserOrder[]>([]);
+  const [showRoleErrorModal, setShowRoleErrorModal] = React.useState(false);
+  const [showErrorModal, setShowErrorModal] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState("");
   const [formData, setFormData] = React.useState({
     phoneNumber: "",
     password: "",
@@ -90,7 +93,17 @@ export default function LichSuPage() {
           });
           
           if (response.error) {
-            alert('Đăng nhập thất bại: ' + response.error);
+            setErrorMessage('Số điện thoại hoặc mật khẩu không đúng.\nVui lòng thử lại.');
+            setShowAuthModal(false);
+            setShowErrorModal(true);
+            return;
+          }
+          
+          // Check role - only allow CLIENT role
+          if (response.data.role && response.data.role !== "CLIENT") {
+            setShowAuthModal(false);
+            setShowRoleErrorModal(true);
+            setFormData({ phoneNumber: "", password: "", confirmPassword: "", name: "" });
             return;
           }
           
@@ -101,23 +114,38 @@ export default function LichSuPage() {
               phoneNumber: response.data.phoneNumber
             };
             
+            // Store tokens if available
+            if (response.data.token) {
+              localStorage.setItem('accessToken', response.data.token);
+            }
+            if (response.data.refreshToken) {
+              localStorage.setItem('refreshToken', response.data.refreshToken);
+            }
+            
             localStorage.setItem('userData', JSON.stringify(userData));
             setUser(userData);
             setIsLoggedIn(true);
             setShowAuthModal(false);
             setFormData({ phoneNumber: "", password: "", confirmPassword: "", name: "" });
             
+            // Dispatch custom event to notify other components (like nav bar)
+            window.dispatchEvent(new Event('authChange'));
+            
             // Auto fetch orders after successful login
             await fetchUserOrders(userData.userId);
           } else {
-            alert('Đăng nhập thất bại: ' + response.data.message);
+            setErrorMessage('Đăng nhập thất bại.\nVui lòng thử lại.');
+            setShowAuthModal(false);
+            setShowErrorModal(true);
           }
         }
       } else {
         // Handle register
         if (formData.phoneNumber && formData.password && formData.confirmPassword && formData.name) {
           if (formData.password !== formData.confirmPassword) {
-            alert("Mật khẩu không khớp!");
+            setErrorMessage("Mật khẩu không khớp!");
+            setShowAuthModal(false);
+            setShowErrorModal(true);
             return;
           }
           
@@ -128,33 +156,59 @@ export default function LichSuPage() {
           });
           
           if (response.error) {
-            alert('Đăng ký thất bại: ' + response.error);
+            setErrorMessage('Đăng ký thất bại.\nVui lòng thử lại.');
+            setShowAuthModal(false);
+            setShowErrorModal(true);
             return;
           }
           
           if (response.data.message === "Registration successful") {
-            alert('Đăng ký thành công! Vui lòng đăng nhập.');
+            setErrorMessage('Đăng ký thành công!\nVui lòng đăng nhập.');
+            setShowAuthModal(false);
+            setShowErrorModal(true);
             setIsLogin(true);
             setFormData({ phoneNumber: formData.phoneNumber, password: "", confirmPassword: "", name: "" });
           } else {
-            alert('Đăng ký thất bại: ' + response.data.message);
+            setErrorMessage('Đăng ký thất bại.\nVui lòng thử lại.');
+            setShowAuthModal(false);
+            setShowErrorModal(true);
           }
         }
       }
     } catch (error) {
       console.error('Auth error:', error);
-      alert('Có lỗi xảy ra. Vui lòng thử lại.');
+      setErrorMessage('Có lỗi xảy ra. Vui lòng thử lại.');
+      setShowAuthModal(false);
+      setShowErrorModal(true);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('userData');
-    setUser(null);
-    setOrders([]);
-    setIsLoggedIn(false);
-    setShowAuthModal(true);
+  const handleLogout = async () => {
+    try {
+      // Call logout API to revoke token on server
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        await apiService.logout();
+        console.log('Logged out from server');
+      }
+    } catch (error) {
+      console.error('Logout API error:', error);
+      // Continue with local logout even if API fails
+    } finally {
+      // Clear local storage
+      localStorage.removeItem('userData');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      setUser(null);
+      setOrders([]);
+      setIsLoggedIn(false);
+      setShowAuthModal(true);
+      
+      // Dispatch custom event to notify other components (like nav bar)
+      window.dispatchEvent(new Event('authChange'));
+    }
   };
 
   // Format date
@@ -442,6 +496,75 @@ export default function LichSuPage() {
             </div>
           </form>
 
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Error Modal */}
+      <Dialog open={showRoleErrorModal} onOpenChange={setShowRoleErrorModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-center text-red-600">
+              Truy cập bị từ chối
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
+                <Lock className="h-8 w-8 text-red-600" />
+              </div>
+            </div>
+            <p className="text-center text-gray-700">
+              Tài khoản này không có quyền truy cập vào hệ thống khách hàng.
+            </p>
+            <p className="text-center text-sm text-gray-500">
+              Chỉ tài khoản khách hàng (CLIENT) mới có thể đăng nhập vào ứng dụng này.
+            </p>
+            <Button 
+              onClick={() => {
+                setShowRoleErrorModal(false);
+                setShowAuthModal(true);
+              }}
+              className="w-full"
+            >
+              Đăng nhập lại
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* General Error Modal */}
+      <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl text-center text-gray-900">
+              Thông báo
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-center">
+              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                <svg className="h-8 w-8 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-center text-gray-700 whitespace-pre-line">
+              {errorMessage}
+            </p>
+            <Button 
+              onClick={() => {
+                setShowErrorModal(false);
+                if (errorMessage.includes("thành công")) {
+                  // If registration successful, don't reopen auth modal
+                  return;
+                }
+                setShowAuthModal(true);
+              }}
+              className="w-full"
+            >
+              OK
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

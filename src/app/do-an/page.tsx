@@ -52,7 +52,7 @@ export default function DoAnPage() {
             </p>
           </div>
           <Button 
-            className="mt-4 sm:mt-0 w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+            className="mt-4 sm:mt-0 w-full sm:w-auto bg-black hover:bg-neutral-800"
             onClick={() => router.push('/tao-don-hang')}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
