@@ -1,4 +1,4 @@
-const API_BASE_URL = 'https://api.yenhafood.site:8080';
+const API_BASE_URL = 'https://api.yenhafood.site:8080/api';
 
 export interface Product {
   productId: number;

@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { getPlaceholderImage } from "@/lib/api";
 
-const BACKEND_BASE_URL = "https://api.yenhafood.site:8080";
+const BACKEND_BASE_URL = "https://api.yenhafood.site:8080/api";
 
 interface ProductImageProps {
   imageUrl: string | null;
