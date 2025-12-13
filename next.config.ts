@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-    // Cho phép load ảnh từ S3 và backend
     images: {
-        domains: ["foodstoreyenha.s3.amazonaws.com", "192.168.1.9"],
+        domains: ["foodstoreyenha.s3.amazonaws.com"],
         remotePatterns: [
             {
                 protocol: 'http',
