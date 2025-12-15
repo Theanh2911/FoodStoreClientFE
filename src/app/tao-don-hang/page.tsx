@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, ArrowLeft, Filter, Receipt, CheckCircle } from "lucide-react";
-import { apiService, formatPrice, Product, AuthenticatedOrderRequest, GuestOrderRequest, OrderItemRequest } from "@/lib/api";
+import { apiService, formatPrice, Product, UnifiedOrderRequest, OrderItemRequest } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
@@ -124,41 +124,31 @@ export default function TaoDonHangPage() {
       const userDataStr = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
       const userData = userDataStr ? JSON.parse(userDataStr) : null;
 
-      // Prepare items data (same structure for both APIs)
+      // Prepare items data
       const items: OrderItemRequest[] = orderItems.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
         note: "" // You can add notes functionality later
       }));
 
-      let result;
+      // Prepare unified order data
+      const orderData: UnifiedOrderRequest = {
+        sessionId: session.sessionId,
+        tableNumber: session.tableNumber,
+        total: calculateTotal(),
+        items: items
+      };
 
-      // Check if user is authenticated
-      if (userData) {
-        // User is logged in - Use authenticated API
-        console.log('Creating order for authenticated user:', userData.name);
-        
-        const orderData: AuthenticatedOrderRequest = {
-          sessionId: session.sessionId,
-          tableNumber: session.tableNumber,
-          total: calculateTotal(),
-          items: items
-        };
-
-        result = await apiService.createAuthenticatedOrder(orderData);
-      } else {
-        // Guest user - Use guest API
+      // Nếu là guest, thêm field name
+      if (!userData) {
+        orderData.name = `Khách vãng lai bàn ${session.tableNumber}`;
         console.log('Creating order for guest user at table:', session.tableNumber);
-        
-        const orderData: GuestOrderRequest = {
-          name: `Khách vãng lai bàn ${session.tableNumber}`,
-          sessionId: session.sessionId,
-          total: calculateTotal(),
-          items: items
-        };
-
-        result = await apiService.createGuestOrder(orderData);
+      } else {
+        console.log('Creating order for authenticated user:', userData.name);
       }
+
+      // Gọi unified API - Backend sẽ phân biệt qua Authorization header
+      const result = await apiService.createOrder(orderData);
 
       if (result.error) {
         setSubmitError(result.error);

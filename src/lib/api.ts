@@ -35,6 +35,16 @@ export interface OrderItemRequest {
   note?: string;
 }
 
+// Unified order request structure
+export interface UnifiedOrderRequest {
+  sessionId: string;
+  tableNumber: number;
+  name?: string;  // Chỉ có khi guest
+  total: number;
+  items: OrderItemRequest[];
+}
+
+// Legacy - Keep for backward compatibility
 export interface AuthenticatedOrderRequest {
   sessionId: string;
   tableNumber: number;
@@ -180,15 +190,26 @@ class ApiService {
     });
   }
 
-  // Legacy method - Keep for backward compatibility
-  async createOrder(orderData: CreateOrderRequest): Promise<ApiResponse<Order>> {
+  // Unified order creation - Backend phân biệt qua Authorization header
+  async createOrder(orderData: UnifiedOrderRequest): Promise<ApiResponse<Order>> {
+    const token = localStorage.getItem('accessToken');
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Nếu có token thì thêm Authorization header
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create`, {
       method: 'POST',
       body: JSON.stringify(orderData),
+      headers,
     });
   }
 
-  // New method for authenticated users
+  // Legacy methods - Keep for backward compatibility
   async createAuthenticatedOrder(orderData: AuthenticatedOrderRequest): Promise<ApiResponse<Order>> {
     const token = localStorage.getItem('accessToken');
     const headers: HeadersInit = {
@@ -206,7 +227,6 @@ class ApiService {
     });
   }
 
-  // New method for guest users
   async createGuestOrder(orderData: GuestOrderRequest): Promise<ApiResponse<Order>> {
     return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create/guest`, {
       method: 'POST',
