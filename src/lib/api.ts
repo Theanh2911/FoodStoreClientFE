@@ -220,7 +220,7 @@ class ApiService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create/authenticated`, {
+    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create`, {
       method: 'POST',
       body: JSON.stringify(orderData),
       headers,
@@ -228,7 +228,7 @@ class ApiService {
   }
 
   async createGuestOrder(orderData: GuestOrderRequest): Promise<ApiResponse<Order>> {
-    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create/guest`, {
+    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create`, {
       method: 'POST',
       body: JSON.stringify(orderData),
     });
