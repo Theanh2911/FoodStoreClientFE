@@ -139,11 +139,12 @@ export default function TaoDonHangPage() {
         items: items
       };
 
-      // Nếu là guest, thêm field name
+      // Thêm field name cho cả guest và user đã đăng nhập (backend yêu cầu)
       if (!userData) {
         orderData.name = `Khách vãng lai bàn ${session.tableNumber}`;
         console.log('Creating order for guest user at table:', session.tableNumber);
       } else {
+        orderData.name = userData?.name || `Khách bàn ${session.tableNumber}`;
         console.log('Creating order for authenticated user:', userData.name);
       }
 

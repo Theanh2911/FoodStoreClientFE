@@ -39,7 +39,7 @@ export interface OrderItemRequest {
 export interface UnifiedOrderRequest {
   sessionId: string;
   tableNumber: number;
-  name?: string;  // Chỉ có khi guest
+  name?: string; // Tên khách (guest hoặc user đã đăng nhập)
   total: number;
   items: OrderItemRequest[];
 }
