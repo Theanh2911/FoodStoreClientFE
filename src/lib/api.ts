@@ -40,6 +40,7 @@ export interface UnifiedOrderRequest {
   sessionId: string;
   tableNumber: number;
   name?: string; // Tên khách (guest hoặc user đã đăng nhập)
+  userId?: number; // Id khách hàng (khi đã đăng nhập)
   total: number;
   items: OrderItemRequest[];
 }
@@ -48,6 +49,7 @@ export interface UnifiedOrderRequest {
 export interface AuthenticatedOrderRequest {
   sessionId: string;
   tableNumber: number;
+  userId?: number;
   total: number;
   items: OrderItemRequest[];
 }

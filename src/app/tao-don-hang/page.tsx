@@ -145,6 +145,7 @@ export default function TaoDonHangPage() {
         console.log('Creating order for guest user at table:', session.tableNumber);
       } else {
         orderData.name = userData?.name || `Khách bàn ${session.tableNumber}`;
+        orderData.userId = userData?.userId;
         console.log('Creating order for authenticated user:', userData.name);
       }
 
