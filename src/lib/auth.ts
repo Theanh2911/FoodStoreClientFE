@@ -36,6 +36,11 @@ export function getUserSession(): StoredUserSession | null {
   if (!raw) return null;
 
   const parsed = safeJsonParse<Partial<StoredUserSession>>(raw);
+  if (!parsed) {
+    clearAuthState();
+    return null;
+  }
+
   const expiresAt = parsed?.expiresAt;
 
   if (typeof expiresAt !== "number") {
@@ -78,5 +83,6 @@ export function clearAuthState(): void {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
 }
+
 
 
