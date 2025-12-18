@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, ArrowLeft, Filter, Receipt, CheckCircle } from "lucide-react";
 import { apiService, formatPrice, Product, UnifiedOrderRequest, OrderItemRequest } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
+import { getUserSession } from "@/lib/auth";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
 
@@ -120,9 +121,8 @@ export default function TaoDonHangPage() {
         return;
       }
 
-      // Get user info from localStorage (if logged in)
-      const userDataStr = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
-      const userData = userDataStr ? JSON.parse(userDataStr) : null;
+      // Get user session (auto-expires)
+      const userSession = getUserSession();
 
       // Prepare items data
       const items: OrderItemRequest[] = orderItems.map(item => ({
@@ -140,13 +140,13 @@ export default function TaoDonHangPage() {
       };
 
       // Thêm field name cho cả guest và user đã đăng nhập (backend yêu cầu)
-      if (!userData) {
+      if (!userSession) {
         orderData.name = `Khách vãng lai bàn ${session.tableNumber}`;
         console.log('Creating order for guest user at table:', session.tableNumber);
       } else {
-        orderData.name = userData?.name || `Khách bàn ${session.tableNumber}`;
-        orderData.userId = userData?.userId;
-        console.log('Creating order for authenticated user:', userData.name);
+        orderData.name = userSession.name || `Khách bàn ${session.tableNumber}`;
+        orderData.userId = userSession.userId;
+        console.log('Creating order for authenticated user:', userSession.name);
       }
 
       // Gọi unified API - Backend sẽ phân biệt qua Authorization header
