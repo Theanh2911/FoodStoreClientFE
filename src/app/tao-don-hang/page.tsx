@@ -5,6 +5,7 @@ import { DashboardNav } from "@/components/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, ArrowLeft, Filter, Receipt, CheckCircle } from "lucide-react";
 import { apiService, formatPrice, Product, UnifiedOrderRequest, OrderItemRequest } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
@@ -14,6 +15,7 @@ import { useRouter } from "next/navigation";
 
 interface CartItem extends Product {
   quantity: number;
+  note?: string;
 }
 
 export default function TaoDonHangPage() {
@@ -74,7 +76,7 @@ export default function TaoDonHangPage() {
             : item
         );
       } else {
-        return [...prev, { ...product, quantity: 1 }];
+        return [...prev, { ...product, quantity: 1, note: "" }];
       }
     });
   };
@@ -128,7 +130,7 @@ export default function TaoDonHangPage() {
       const items: OrderItemRequest[] = orderItems.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
-        note: "" // You can add notes functionality later
+        note: item.note?.trim() ? item.note.trim() : undefined
       }));
 
       // Prepare unified order data
@@ -382,19 +384,35 @@ export default function TaoDonHangPage() {
           <div className="py-4">
             <div className="mb-4">
               <h3 className="font-semibold mb-3">Chi tiết đơn hàng:</h3>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
+              <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
                 {orderItems.map((item) => (
-                  <div key={item.productId} className="flex justify-between items-center py-1 border-b">
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {formatPrice(item.price)} x {item.quantity}
-                      </p>
+                  <div key={item.productId} className="py-2 border-b">
+                    <div className="flex justify-between items-start gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{item.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {formatPrice(item.price)} x {item.quantity}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="font-semibold text-sm">
+                          {formatPrice(item.price * item.quantity)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-sm">
-                        {formatPrice(item.price * item.quantity)}
-                      </p>
+
+                    <div className="mt-2">
+                      <Textarea
+                        value={item.note ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setOrderItems((prev) =>
+                            prev.map((p) => (p.productId === item.productId ? { ...p, note: value } : p))
+                          );
+                        }}
+                        placeholder="Ghi chú (ví dụ: ít cay, không hành...)"
+                        className="min-h-10 text-sm"
+                      />
                     </div>
                   </div>
                 ))}
