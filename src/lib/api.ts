@@ -193,7 +193,7 @@ class ApiService {
   }
 
   // Unified order creation - Backend phân biệt qua Authorization header
-  async createOrder(orderData: UnifiedOrderRequest): Promise<ApiResponse<Order>> {
+  async createOrder(orderData: UnifiedOrderRequest): Promise<ApiResponse<UserOrder>> {
     const token = localStorage.getItem('accessToken');
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -204,7 +204,7 @@ class ApiService {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create`, {
+    return this.fetchWithErrorHandling<UserOrder>(`${API_BASE_URL}/orders/create`, {
       method: 'POST',
       body: JSON.stringify(orderData),
       headers,

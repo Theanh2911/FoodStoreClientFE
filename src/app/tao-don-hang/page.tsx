@@ -10,6 +10,7 @@ import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, ArrowLeft, Filter, Rec
 import { apiService, formatPrice, Product, UnifiedOrderRequest, OrderItemRequest } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
 import { getUserSession } from "@/lib/auth";
+import { upsertCachedUnpaidOrder } from "@/lib/unpaid-orders";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
 
@@ -162,6 +163,9 @@ export default function TaoDonHangPage() {
 
       // Success - order created
       console.log('Order created successfully:', result.data);
+
+      // Cache this unpaid order for the current table session (used by /thanh-toan)
+      upsertCachedUnpaidOrder(session.sessionId, result.data);
       
       // Close modal and reset state
       setShowConfirmModal(false);

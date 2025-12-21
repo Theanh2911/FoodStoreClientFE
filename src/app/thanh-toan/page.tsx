@@ -4,14 +4,21 @@ import * as React from "react";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Copy, CreditCard, QrCode, Building, User, Hash, CheckCircle, Loader2 } from "lucide-react";
-import { apiService, BankAccount } from "@/lib/api";
+import { apiService, BankAccount, UserOrder } from "@/lib/api";
+import { getTableSession } from "@/lib/session";
+import { getCachedUnpaidOrders } from "@/lib/unpaid-orders";
 
 export default function ThanhToanPage() {
   const [copiedField, setCopiedField] = React.useState<string | null>(null);
   const [bankAccount, setBankAccount] = React.useState<BankAccount | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const [sessionId, setSessionId] = React.useState<string | null>(null);
+  const [unpaidOrders, setUnpaidOrders] = React.useState<UserOrder[]>([]);
+  const [selectedOrder, setSelectedOrder] = React.useState<UserOrder | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
 
   // Fetch bank account information on mount
   React.useEffect(() => {
@@ -63,6 +70,26 @@ export default function ThanhToanPage() {
     };
 
     fetchBankAccount();
+  }, []);
+
+  // Load current session + cached unpaid orders
+  React.useEffect(() => {
+    const session = getTableSession();
+    if (!session) {
+      setError("Không tìm thấy phiên bàn. Vui lòng quét mã QR lại.");
+      return;
+    }
+
+    setSessionId(session.sessionId);
+    const cached = getCachedUnpaidOrders(session.sessionId);
+
+    // Keep only not-paid orders (backend may use different labels; keep it permissive)
+    const filtered = cached.filter((o) => {
+      const s = (o.status || "").toUpperCase();
+      return s !== "PAID" && s !== "COMPLETED" && s !== "DONE";
+    });
+
+    setUnpaidOrders(filtered);
   }, []);
 
   // Copy to clipboard function
@@ -117,6 +144,27 @@ export default function ThanhToanPage() {
     );
   }
 
+  const openPaymentModal = (order: UserOrder) => {
+    setSelectedOrder(order);
+    setIsPaymentModalOpen(true);
+  };
+
+  const closePaymentModal = () => {
+    setIsPaymentModalOpen(false);
+    setSelectedOrder(null);
+  };
+
+  const getOrderAmountInt = (totalAmount: number) => {
+    // totalAmount is always like xxxxx.x → drop decimal part
+    return Math.trunc(totalAmount);
+  };
+
+  const buildVietQrImageUrl = (order: UserOrder, bank: BankAccount) => {
+    const amount = getOrderAmountInt(order.totalAmount);
+    const addInfo = `YHF${order.orderId}`;
+    return `https://img.vietqr.io/image/${bank.bankName}-${bank.accountNumber}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNav />
@@ -135,6 +183,78 @@ export default function ThanhToanPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Unpaid Orders Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <CreditCard className="h-5 w-5 mr-2" />
+                Đơn chưa thanh toán
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {sessionId && (
+                <p className="text-xs text-gray-500">
+                  Phiên: {sessionId.substring(0, 8)}...
+                </p>
+              )}
+
+              {unpaidOrders.length === 0 ? (
+                <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
+                  Chưa có đơn hàng nào cần thanh toán trong phiên này.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {unpaidOrders.map((order) => (
+                    <Card key={order.orderId} className="shadow-sm">
+                      <CardHeader className="py-3">
+                        <CardTitle className="text-base">
+                          Đơn #{order.orderId}
+                        </CardTitle>
+                        <p className="text-xs text-gray-500">
+                          {new Date(order.orderTime).toLocaleString("vi-VN")}
+                        </p>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-3">
+                        <div className="space-y-2">
+                          {order.items?.map((item) => (
+                            <div key={item.orderItemId} className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium truncate">{item.productName}</p>
+                                <p className="text-xs text-gray-500">
+                                  {item.productPrice?.toLocaleString("vi-VN")} VNĐ x {item.quantity}
+                                </p>
+                                {item.note ? (
+                                  <p className="text-xs text-blue-700 bg-blue-50 inline-block px-2 py-1 rounded mt-1">
+                                    Ghi chú: {item.note}
+                                  </p>
+                                ) : null}
+                              </div>
+                              <div className="text-sm font-semibold shrink-0">
+                                {(item.productPrice * item.quantity).toLocaleString("vi-VN")} VNĐ
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex items-center justify-between pt-3 border-t">
+                          <div className="font-bold">
+                            Tổng: {order.totalAmount.toLocaleString("vi-VN")} VNĐ
+                          </div>
+                          <Button
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => openPaymentModal(order)}
+                          >
+                            Thanh toán
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Account Information Panel */}
           <Card>
             <CardHeader>
@@ -265,6 +385,54 @@ export default function ThanhToanPage() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Per-order payment modal */}
+        <Dialog open={isPaymentModalOpen} onOpenChange={(open) => (open ? setIsPaymentModalOpen(true) : closePaymentModal())}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                Thanh toán đơn #{selectedOrder?.orderId}
+              </DialogTitle>
+            </DialogHeader>
+
+            {selectedOrder && bankAccount ? (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <div className="p-4 bg-white rounded-lg shadow-sm border">
+                    <img
+                      src={buildVietQrImageUrl(selectedOrder, bankAccount)}
+                      alt="VietQR"
+                      className="w-56 h-56 mx-auto object-contain"
+                    />
+                  </div>
+                </div>
+
+                <div className="text-sm text-gray-700 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Số tiền:</span>
+                    <span className="font-semibold">
+                      {getOrderAmountInt(selectedOrder.totalAmount).toLocaleString("vi-VN")} VNĐ
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Nội dung:</span>
+                    <span className="font-mono font-semibold">
+                      YHF{selectedOrder.orderId}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={closePaymentModal}>
+                    Đóng
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-sm text-gray-600">Không có dữ liệu đơn hàng.</div>
+            )}
+          </DialogContent>
+        </Dialog>
 
       </main>
     </div>
