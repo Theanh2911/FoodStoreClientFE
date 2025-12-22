@@ -5,10 +5,10 @@ import { DashboardNav } from "@/components/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, CreditCard, QrCode, Building, User, Hash, CheckCircle, Loader2 } from "lucide-react";
-import { apiService, BankAccount, UserOrder } from "@/lib/api";
+import { Copy, CreditCard, QrCode, Building, User, Hash, CheckCircle, Loader2, PartyPopper } from "lucide-react";
+import { apiService, BankAccount, UserOrder, PaymentEvent } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
-import { getCachedUnpaidOrders } from "@/lib/unpaid-orders";
+import { getCachedUnpaidOrderIds, removeCachedUnpaidOrderId } from "@/lib/unpaid-orders";
 
 export default function ThanhToanPage() {
   const [copiedField, setCopiedField] = React.useState<string | null>(null);
@@ -19,6 +19,8 @@ export default function ThanhToanPage() {
   const [unpaidOrders, setUnpaidOrders] = React.useState<UserOrder[]>([]);
   const [selectedOrder, setSelectedOrder] = React.useState<UserOrder | null>(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = React.useState(false);
+  const [paymentSuccess, setPaymentSuccess] = React.useState<PaymentEvent | null>(null);
+  const [isPaymentSuccessModalOpen, setIsPaymentSuccessModalOpen] = React.useState(false);
 
   // Fetch bank account information on mount
   React.useEffect(() => {
@@ -72,25 +74,98 @@ export default function ThanhToanPage() {
     fetchBankAccount();
   }, []);
 
-  // Load current session + cached unpaid orders
+  // Load current session + fetch unpaid orders from API by orderIds
   React.useEffect(() => {
-    const session = getTableSession();
-    if (!session) {
-      setError("Không tìm thấy phiên bàn. Vui lòng quét mã QR lại.");
+    const fetchUnpaidOrders = async () => {
+      const session = getTableSession();
+      if (!session) {
+        setError("Không tìm thấy phiên bàn. Vui lòng quét mã QR lại.");
+        return;
+      }
+
+      setSessionId(session.sessionId);
+
+      // Get cached order IDs
+      const orderIds = getCachedUnpaidOrderIds(session.sessionId);
+      
+      if (orderIds.length === 0) {
+        console.log('No unpaid orders found in cache');
+        setUnpaidOrders([]);
+        return;
+      }
+
+      try {
+        console.log('Fetching order details for IDs:', orderIds);
+        
+        // Fetch each order detail from API
+        const orderPromises = orderIds.map(orderId => 
+          apiService.getOrderDetail(orderId)
+        );
+        
+        const results = await Promise.all(orderPromises);
+        
+        // Filter out errors and get valid orders
+        const validOrders = results
+          .filter(result => !result.error && result.data)
+          .map(result => result.data);
+
+        // Filter to keep only unpaid orders
+        const unpaidOnly = validOrders.filter((o) => {
+          const s = (o.status || "").toUpperCase();
+          return s !== "PAID" && s !== "COMPLETED" && s !== "DONE";
+        });
+
+        console.log('Loaded unpaid orders from API:', unpaidOnly);
+        setUnpaidOrders(unpaidOnly);
+      } catch (err) {
+        console.error('Error fetching unpaid orders:', err);
+        setError('Có lỗi xảy ra khi tải danh sách đơn hàng');
+      }
+    };
+
+    fetchUnpaidOrders();
+  }, []);
+
+  // Listen to payment events via SSE when payment modal is open
+  React.useEffect(() => {
+    if (!selectedOrder || !isPaymentModalOpen) {
       return;
     }
 
-    setSessionId(session.sessionId);
-    const cached = getCachedUnpaidOrders(session.sessionId);
+    console.log('Starting SSE listener for order:', selectedOrder.orderId);
+    
+    const cleanup = apiService.listenToPaymentEvents(
+      selectedOrder.orderId,
+      (event: PaymentEvent) => {
+        console.log('Payment event received:', event);
+        
+        if (event.status === 'SUCCESS') {
+          // Show success modal
+          setPaymentSuccess(event);
+          setIsPaymentSuccessModalOpen(true);
+          
+          // Close payment modal
+          setIsPaymentModalOpen(false);
+          
+          // Remove order from cache and UI
+          if (sessionId) {
+            removeCachedUnpaidOrderId(sessionId, event.orderId);
+          }
+          
+          // Update unpaid orders list
+          setUnpaidOrders(prev => prev.filter(o => o.orderId !== event.orderId));
+        }
+      },
+      (error) => {
+        console.error('Payment SSE error:', error);
+      }
+    );
 
-    // Keep only not-paid orders (backend may use different labels; keep it permissive)
-    const filtered = cached.filter((o) => {
-      const s = (o.status || "").toUpperCase();
-      return s !== "PAID" && s !== "COMPLETED" && s !== "DONE";
-    });
-
-    setUnpaidOrders(filtered);
-  }, []);
+    // Cleanup on unmount or when order changes
+    return () => {
+      cleanup();
+    };
+  }, [selectedOrder, isPaymentModalOpen, sessionId]);
 
   // Copy to clipboard function
   const copyToClipboard = async (text: string, fieldName: string) => {
@@ -413,6 +488,15 @@ export default function ThanhToanPage() {
                   </div>
                 </div>
 
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <div className="flex items-start">
+                    <Loader2 className="h-4 w-4 text-blue-600 mr-2 mt-0.5 animate-spin" />
+                    <p className="text-sm text-blue-700">
+                      Đang chờ xác nhận thanh toán từ ngân hàng...
+                    </p>
+                  </div>
+                </div>
+
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" onClick={closePaymentModal}>
                     Đóng
@@ -421,6 +505,74 @@ export default function ThanhToanPage() {
               </div>
             ) : (
               <div className="text-sm text-gray-600">Không có dữ liệu đơn hàng.</div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Payment Success Modal */}
+        <Dialog open={isPaymentSuccessModalOpen} onOpenChange={setIsPaymentSuccessModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center text-green-600">
+                <CheckCircle className="h-6 w-6 mr-2" />
+                Thanh toán thành công!
+              </DialogTitle>
+            </DialogHeader>
+
+            {paymentSuccess && (
+              <div className="space-y-4">
+                {/* Success Icon */}
+                <div className="flex justify-center py-6">
+                  <div className="relative">
+                    <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center animate-pulse">
+                      <PartyPopper className="h-12 w-12 text-green-600" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Details */}
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Đơn hàng:</span>
+                    <span className="font-semibold">#{paymentSuccess.orderId}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Số tiền:</span>
+                    <span className="font-semibold text-green-600">
+                      {paymentSuccess.amount.toLocaleString("vi-VN")} VNĐ
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Cổng thanh toán:</span>
+                    <span className="font-semibold">{paymentSuccess.gateway}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Thời gian:</span>
+                    <span className="font-semibold">
+                      {new Date(paymentSuccess.transactionDate).toLocaleString("vi-VN")}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Success Message */}
+                <div className="text-center">
+                  <p className="text-gray-600">{paymentSuccess.message}</p>
+                </div>
+
+                {/* Close Button */}
+                <div className="flex justify-center">
+                  <Button 
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      setIsPaymentSuccessModalOpen(false);
+                      setPaymentSuccess(null);
+                      setSelectedOrder(null);
+                    }}
+                  >
+                    Đóng
+                  </Button>
+                </div>
+              </div>
             )}
           </DialogContent>
         </Dialog>

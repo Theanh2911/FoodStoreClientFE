@@ -125,6 +125,16 @@ export interface BankAccount {
   status: string;
 }
 
+export interface PaymentEvent {
+  orderId: number;
+  paymentId: number;
+  status: string;
+  amount: number;
+  message: string;
+  gateway: string;
+  transactionDate: string;
+}
+
 class ApiService {
   private async fetchWithErrorHandling<T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
     try {
@@ -240,6 +250,11 @@ class ApiService {
     return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/${orderId}`);
   }
 
+  // Get order detail with full information (UserOrder format)
+  async getOrderDetail(orderId: number): Promise<ApiResponse<UserOrder>> {
+    return this.fetchWithErrorHandling<UserOrder>(`${API_BASE_URL}/orders/${orderId}`);
+  }
+
   async getOrders(): Promise<ApiResponse<Order[]>> {
     return this.fetchWithErrorHandling<Order[]>(`${API_BASE_URL}/orders`);
   }
@@ -291,6 +306,41 @@ class ApiService {
       method: 'POST',
       headers,
     });
+  }
+
+  // Listen to payment events via SSE
+  listenToPaymentEvents(
+    orderId: number,
+    onEvent: (event: PaymentEvent) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    const eventSource = new EventSource(`${API_BASE_URL}/payment/events/${orderId}`);
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data: PaymentEvent = JSON.parse(event.data);
+        console.log('Payment event received:', data);
+        onEvent(data);
+      } catch (error) {
+        console.error('Error parsing payment event:', error);
+        if (onError) {
+          onError(error instanceof Error ? error : new Error('Parse error'));
+        }
+      }
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('SSE connection error:', error);
+      if (onError) {
+        onError(new Error('SSE connection failed'));
+      }
+    };
+
+    // Return cleanup function
+    return () => {
+      console.log('Closing SSE connection for order:', orderId);
+      eventSource.close();
+    };
   }
 }
 
