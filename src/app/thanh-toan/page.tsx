@@ -176,9 +176,6 @@ export default function ThanhToanPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
               Thanh toán
             </h1>
-            <p className="text-gray-600">
-              Thông tin tài khoản ngân hàng và mã QR thanh toán
-            </p>
           </div>
         </div>
 
@@ -192,12 +189,6 @@ export default function ThanhToanPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {sessionId && (
-                <p className="text-xs text-gray-500">
-                  Phiên: {sessionId.substring(0, 8)}...
-                </p>
-              )}
-
               {unpaidOrders.length === 0 ? (
                 <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
                   Chưa có đơn hàng nào cần thanh toán trong phiên này.
@@ -210,7 +201,7 @@ export default function ThanhToanPage() {
                         <CardTitle className="text-base">
                           Đơn #{order.orderId}
                         </CardTitle>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-semibold text-gray-700">
                           {new Date(order.orderTime).toLocaleString("vi-VN")}
                         </p>
                       </CardHeader>
