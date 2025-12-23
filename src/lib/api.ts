@@ -316,10 +316,16 @@ class ApiService {
   ): () => void {
     const eventSource = new EventSource(`${API_BASE_URL}/payment/events/${orderId}`);
 
-    eventSource.onmessage = (event) => {
+    // Listen for 'connected' event
+    eventSource.addEventListener('connected', (event) => {
+      console.log('SSE connected:', event.data);
+    });
+
+    // Listen for 'payment-status' event (custom event from backend)
+    eventSource.addEventListener('payment-status', (event) => {
       try {
         const data: PaymentEvent = JSON.parse(event.data);
-        console.log('Payment event received:', data);
+        console.log('Payment status event received:', data);
         onEvent(data);
       } catch (error) {
         console.error('Error parsing payment event:', error);
@@ -327,7 +333,7 @@ class ApiService {
           onError(error instanceof Error ? error : new Error('Parse error'));
         }
       }
-    };
+    });
 
     eventSource.onerror = (error) => {
       console.error('SSE connection error:', error);
