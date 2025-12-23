@@ -13,6 +13,7 @@ import { getUserSession } from "@/lib/auth";
 import { addCachedUnpaidOrderId } from "@/lib/unpaid-orders";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
+import importFresh from "import-fresh";
 
 interface CartItem extends Product {
   quantity: number;
@@ -30,7 +31,6 @@ export default function TaoDonHangPage() {
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const router = useRouter();
 
-  // Get unique categories from products
   const categories = React.useMemo(() => {
     const uniqueCategories = Array.from(
       new Set(products.map(product => product.category.name))
@@ -38,7 +38,6 @@ export default function TaoDonHangPage() {
     return ["all", ...uniqueCategories];
   }, [products]);
 
-  // Filter products by selected category
   const filteredProducts = React.useMemo(() => {
     if (selectedCategory === "all") {
       return products;
@@ -46,7 +45,6 @@ export default function TaoDonHangPage() {
     return products.filter(product => product.category.name === selectedCategory);
   }, [products, selectedCategory]);
 
-  // Fetch all products from backend
   React.useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -66,7 +64,6 @@ export default function TaoDonHangPage() {
     fetchProducts();
   }, []);
 
-  // Add item to order
   const addToOrder = (product: Product) => {
     setOrderItems(prev => {
       const existingItem = prev.find(item => item.productId === product.productId);
@@ -82,7 +79,6 @@ export default function TaoDonHangPage() {
     });
   };
 
-  // Remove item from order
   const removeFromOrder = (productId: number) => {
     setOrderItems(prev => {
       return prev.map(item =>
@@ -93,29 +89,24 @@ export default function TaoDonHangPage() {
     });
   };
 
-  // Calculate total
   const calculateTotal = () => {
     return orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  // Get quantity for a product
   const getProductQuantity = (productId: number) => {
     const orderItem = orderItems.find(item => item.productId === productId);
     return orderItem ? orderItem.quantity : 0;
   };
 
-  // Handle order confirmation
   const handleConfirmOrder = () => {
     setShowConfirmModal(true);
   };
 
-  // Handle final order submission
   const handleFinalConfirm = async () => {
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      // Get session info
       const session = getTableSession();
       
       if (!session) {
@@ -124,17 +115,14 @@ export default function TaoDonHangPage() {
         return;
       }
 
-      // Get user session (auto-expires)
       const userSession = getUserSession();
 
-      // Prepare items data
       const items: OrderItemRequest[] = orderItems.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
         note: item.note?.trim() ? item.note.trim() : undefined
       }));
 
-      // Prepare unified order data
       const orderData: UnifiedOrderRequest = {
         sessionId: session.sessionId,
         tableNumber: session.tableNumber,
@@ -142,7 +130,6 @@ export default function TaoDonHangPage() {
         items: items
       };
 
-      // Thêm field name cho cả guest và user đã đăng nhập (backend yêu cầu)
       if (!userSession) {
         orderData.name = `Khách vãng lai bàn ${session.tableNumber}`;
         console.log('Creating order for guest user at table:', session.tableNumber);
@@ -152,7 +139,6 @@ export default function TaoDonHangPage() {
         console.log('Creating order for authenticated user:', userSession.name);
       }
 
-      // Gọi unified API - Backend sẽ phân biệt qua Authorization header
       const result = await apiService.createOrder(orderData);
 
       if (result.error) {
@@ -161,20 +147,10 @@ export default function TaoDonHangPage() {
         return;
       }
 
-      // Success - order created
-      console.log('Order created successfully:', result.data);
-
-      // Cache only the order ID for the current table session (used by /thanh-toan)
       addCachedUnpaidOrderId(session.sessionId, result.data.orderId);
-      
-      // Close modal and reset state
       setShowConfirmModal(false);
       setOrderItems([]);
       setIsSubmitting(false);
-
-      // You could redirect to a success page or show a success message
-      // router.push(`/don-hang-thanh-cong?orderId=${result.data.orderId}`);
-      
     } catch (error) {
       console.error('Error creating order:', error);
       setSubmitError('Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
