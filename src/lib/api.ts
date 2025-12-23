@@ -317,16 +317,24 @@ class ApiService {
     const eventSource = new EventSource(`${API_BASE_URL}/payment/events/${orderId}`);
 
     // Listen for 'connected' event
-    eventSource.addEventListener('connected', (event) => {
+    eventSource.addEventListener('connected', (event: MessageEvent) => {
       console.log('SSE connected:', event.data);
     });
 
-    // Listen for 'payment-status' event (custom event from backend)
-    eventSource.addEventListener('payment-status', (event) => {
+    // Listen for 'payment-status' event - theo đúng quy trình backend
+    eventSource.addEventListener('payment-status', (event: MessageEvent) => {
       try {
+        console.log('Raw payment-status event received:', event.data);
+        
+        // Parse JSON từ event.data
         const data: PaymentEvent = JSON.parse(event.data);
-        console.log('Payment status event received:', data);
-        onEvent(data);
+        console.log('Payment status event parsed:', data);
+        
+        // Kiểm tra status === 'SUCCESS'
+        if (data.status === 'SUCCESS') {
+          console.log('Payment SUCCESS detected!');
+          onEvent(data);
+        }
       } catch (error) {
         console.error('Error parsing payment event:', error);
         if (onError) {
