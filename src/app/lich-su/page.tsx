@@ -104,6 +104,13 @@ export default function LichSuPage() {
               name: response.data.name,
               phoneNumber: response.data.phoneNumber
             };
+
+            if (response.data.token) {
+              localStorage.setItem('accessToken', response.data.token);
+            }
+            if (response.data.refreshToken) {
+              localStorage.setItem('refreshToken', response.data.refreshToken);
+            }
             
             setUserSession(userData);
             setUser(userData);
