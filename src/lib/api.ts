@@ -113,6 +113,7 @@ export interface UserOrder {
   totalAmount: number;
   orderTime: string;
   status: string;
+  isRated: boolean;
   items: UserOrderItem[];
 }
 
@@ -133,6 +134,17 @@ export interface PaymentEvent {
   message: string;
   gateway: string;
   transactionDate: string;
+}
+
+export interface RatingResponse {
+  ratingId: number;
+  orderId: number;
+  userId: string;
+  comment: string;
+  rating: number;
+  imageUrls: string[];
+  createdAt: string;
+  orderDetails: UserOrder;
 }
 
 class ApiService {
@@ -306,6 +318,42 @@ class ApiService {
       method: 'POST',
       headers,
     });
+  }
+
+  // Create rating for an order
+  async createRating(orderId: number, ratingData: FormData): Promise<ApiResponse<RatingResponse>> {
+    const token = localStorage.getItem('accessToken');
+    
+    if (!token) {
+      return {
+        data: {} as RatingResponse,
+        error: 'Vui lòng đăng nhập để đánh giá'
+      };
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/ratings/${orderId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type for FormData - browser will set it with boundary
+        },
+        body: ratingData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        throw new Error(errorData.message || `API Error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return { data };
+    } catch (error) {
+      return {
+        data: {} as RatingResponse,
+        error: error instanceof Error ? error.message : 'Không thể gửi đánh giá'
+      };
+    }
   }
 
   // Listen to payment events via SSE

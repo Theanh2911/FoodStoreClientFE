@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { History, Clock, ShoppingBag, User, Lock, Phone, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { History, Clock, ShoppingBag, User, Lock, Phone, Eye, EyeOff, Loader2, Star, Image as ImageIcon, X } from "lucide-react";
 import { apiService, UserOrder, formatPrice } from "@/lib/api";
 import { clearAuthState, getUserSession, setUserSession } from "@/lib/auth";
 
@@ -31,6 +32,16 @@ export default function LichSuPage() {
     confirmPassword: "",
     name: ""
   });
+
+  // Rating modal state
+  const [showRatingModal, setShowRatingModal] = React.useState(false);
+  const [selectedOrderForRating, setSelectedOrderForRating] = React.useState<UserOrder | null>(null);
+  const [rating, setRating] = React.useState(0);
+  const [hoverRating, setHoverRating] = React.useState(0);
+  const [comment, setComment] = React.useState("");
+  const [ratingImages, setRatingImages] = React.useState<File[]>([]);
+  const [imagePreviewUrls, setImagePreviewUrls] = React.useState<string[]>([]);
+  const [isSubmittingRating, setIsSubmittingRating] = React.useState(false);
 
   // Check authentication on component mount
   React.useEffect(() => {
@@ -161,6 +172,134 @@ export default function LichSuPage() {
     setShowAuthModal(true);
   };
 
+  // Open rating modal
+  const handleOpenRatingModal = (order: UserOrder) => {
+    setSelectedOrderForRating(order);
+    setRating(0);
+    setHoverRating(0);
+    setComment("");
+    setRatingImages([]);
+    setImagePreviewUrls([]);
+    setShowRatingModal(true);
+  };
+
+  // Close rating modal
+  const handleCloseRatingModal = () => {
+    setShowRatingModal(false);
+    setSelectedOrderForRating(null);
+    setRating(0);
+    setHoverRating(0);
+    setComment("");
+    setRatingImages([]);
+    // Clean up preview URLs
+    imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+    setImagePreviewUrls([]);
+  };
+
+  // Handle image selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    const newFiles: File[] = [];
+    const newPreviewUrls: string[] = [];
+
+    Array.from(files).forEach((file) => {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`File ${file.name} vượt quá 5MB`);
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        alert(`File ${file.name} không phải là hình ảnh`);
+        return;
+      }
+
+      newFiles.push(file);
+      newPreviewUrls.push(URL.createObjectURL(file));
+    });
+
+    setRatingImages(prev => [...prev, ...newFiles]);
+    setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
+  };
+
+  // Remove image
+  const handleRemoveImage = (index: number) => {
+    // Revoke URL to free memory
+    URL.revokeObjectURL(imagePreviewUrls[index]);
+    
+    setRatingImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Count words in comment
+  const getWordCount = (text: string): number => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
+
+  // Handle comment change with word limit
+  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    const wordCount = getWordCount(text);
+    
+    if (wordCount <= 50) {
+      setComment(text);
+    }
+  };
+
+  // Submit rating
+  const handleSubmitRating = async () => {
+    if (!selectedOrderForRating) return;
+    
+    if (rating === 0) {
+      alert('Vui lòng chọn số sao đánh giá');
+      return;
+    }
+
+    setIsSubmittingRating(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('rating', rating.toString());
+      
+      if (comment.trim()) {
+        formData.append('comment', comment.trim());
+      }
+
+      ratingImages.forEach((image) => {
+        formData.append('images', image);
+      });
+
+      const response = await apiService.createRating(selectedOrderForRating.orderId, formData);
+
+      if (response.error) {
+        alert('Lỗi: ' + response.error);
+        return;
+      }
+
+      // Success
+      alert('Đánh giá thành công!');
+      
+      // Update order list to mark as rated
+      setOrders(prevOrders => 
+        prevOrders.map(order => 
+          order.orderId === selectedOrderForRating.orderId 
+            ? { ...order, isRated: true }
+            : order
+        )
+      );
+
+      handleCloseRatingModal();
+    } catch (error) {
+      console.error('Error submitting rating:', error);
+      alert('Có lỗi xảy ra khi gửi đánh giá');
+    } finally {
+      setIsSubmittingRating(false);
+    }
+  };
+
   // Format date
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'Chưa có thông tin';
@@ -289,7 +428,7 @@ export default function LichSuPage() {
                         <div className="flex items-center">
                           <span className="text-sm text-gray-500 mr-3 font-medium">Trạng thái:</span>
                           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            order.status === 'Hoàn thành' || order.status === 'COMPLETED'
+                            order.status === 'Hoàn thành' || order.status === 'COMPLETED' || order.status === 'PAID'
                               ? 'bg-green-100 text-green-700 border border-green-200' 
                               : order.status === 'PENDING'
                               ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
@@ -302,6 +441,29 @@ export default function LichSuPage() {
                           {order.totalAmount ? formatPrice(order.totalAmount) : 'Chưa có thông tin'}
                         </div>
                       </div>
+
+                      {/* Rating button - Only show for completed/paid orders that haven't been rated */}
+                      {(order.status === 'COMPLETED' || order.status === 'PAID' || order.status === 'Hoàn thành') && !order.isRated && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <Button
+                            onClick={() => handleOpenRatingModal(order)}
+                            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white"
+                          >
+                            <Star className="h-4 w-4 mr-2" />
+                            Đánh giá
+                          </Button>
+                        </div>
+                      )}
+
+                      {/* Already rated indicator */}
+                      {order.isRated && (
+                        <div className="mt-3 pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-center text-sm text-gray-500 bg-gray-50 py-2 rounded">
+                            <Star className="h-4 w-4 mr-2 text-yellow-500 fill-yellow-500" />
+                            Đã đánh giá
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -446,6 +608,143 @@ export default function LichSuPage() {
             </div>
           </form>
 
+        </DialogContent>
+      </Dialog>
+
+      {/* Rating Modal */}
+      <Dialog open={showRatingModal} onOpenChange={(open) => !open && handleCloseRatingModal()}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              Đánh giá đơn hàng #{selectedOrderForRating?.orderId}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            {/* Star Rating */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Đánh giá của bạn</Label>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                    className="transition-transform hover:scale-110"
+                  >
+                    <Star
+                      className={`h-10 w-10 ${
+                        star <= (hoverRating || rating)
+                          ? 'fill-yellow-400 text-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                    />
+                  </button>
+                ))}
+                {rating > 0 && (
+                  <span className="ml-2 text-sm font-medium text-gray-700">
+                    {rating} sao
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Comment */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="comment" className="text-sm font-medium">
+                  Nhận xét (Không bắt buộc)
+                </Label>
+                <span className={`text-xs ${
+                  getWordCount(comment) > 50 ? 'text-red-500' : 'text-gray-500'
+                }`}>
+                  {getWordCount(comment)}/50 từ
+                </span>
+              </div>
+              <Textarea
+                id="comment"
+                value={comment}
+                onChange={handleCommentChange}
+                placeholder="Chia sẻ trải nghiệm của bạn về món ăn và dịch vụ..."
+                className="min-h-[100px] resize-none"
+              />
+            </div>
+
+            {/* Image Upload */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                Hình ảnh (Không bắt buộc)
+              </Label>
+              
+              {/* Image Previews */}
+              {imagePreviewUrls.length > 0 && (
+                <div className="grid grid-cols-3 gap-3 mb-3">
+                  {imagePreviewUrls.map((url, index) => (
+                    <div key={index} className="relative group">
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-24 object-cover rounded-lg border"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Upload Button */}
+              <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors">
+                <ImageIcon className="h-5 w-5 text-gray-500" />
+                <span className="text-sm text-gray-600">
+                  Thêm hình ảnh (Tối đa 5MB/ảnh)
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Submit Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                onClick={handleCloseRatingModal}
+                className="flex-1"
+                disabled={isSubmittingRating}
+              >
+                Hủy
+              </Button>
+              <Button
+                onClick={handleSubmitRating}
+                className="flex-1 bg-yellow-500 hover:bg-yellow-600"
+                disabled={isSubmittingRating || rating === 0}
+              >
+                {isSubmittingRating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Đang gửi...
+                  </>
+                ) : (
+                  <>
+                    <Star className="h-4 w-4 mr-2" />
+                    Gửi đánh giá
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
