@@ -116,6 +116,14 @@ export default function LichSuPage() {
               phoneNumber: response.data.phoneNumber
             };
             
+            // Save tokens to localStorage
+            if (response.data.token) {
+              localStorage.setItem('accessToken', response.data.token);
+            }
+            if (response.data.refreshToken) {
+              localStorage.setItem('refreshToken', response.data.refreshToken);
+            }
+            
             setUserSession(userData);
             setUser(userData);
             setIsLoggedIn(true);
@@ -616,7 +624,7 @@ export default function LichSuPage() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">
-              Đánh giá đơn hàng #{selectedOrderForRating?.orderId}
+              Đánh giá đơn hàng
             </DialogTitle>
           </DialogHeader>
 
@@ -643,11 +651,6 @@ export default function LichSuPage() {
                     />
                   </button>
                 ))}
-                {rating > 0 && (
-                  <span className="ml-2 text-sm font-medium text-gray-700">
-                    {rating} sao
-                  </span>
-                )}
               </div>
             </div>
 
@@ -655,7 +658,7 @@ export default function LichSuPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="comment" className="text-sm font-medium">
-                  Nhận xét (Không bắt buộc)
+                  Nhận xét
                 </Label>
                 <span className={`text-xs ${
                   getWordCount(comment) > 50 ? 'text-red-500' : 'text-gray-500'
@@ -675,7 +678,7 @@ export default function LichSuPage() {
             {/* Image Upload */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">
-                Hình ảnh (Không bắt buộc)
+                Hình ảnh
               </Label>
               
               {/* Image Previews */}
@@ -704,7 +707,7 @@ export default function LichSuPage() {
               <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 cursor-pointer transition-colors">
                 <ImageIcon className="h-5 w-5 text-gray-500" />
                 <span className="text-sm text-gray-600">
-                  Thêm hình ảnh (Tối đa 5MB/ảnh)
+                  Thêm hình ảnh
                 </span>
                 <input
                   type="file"
