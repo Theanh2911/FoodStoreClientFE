@@ -5,7 +5,7 @@ import { DashboardNav } from "@/components/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle, ShoppingCart } from "lucide-react";
-import { apiService, formatPrice, getPlaceholderImage, CATEGORY_IDS, Product } from "@/lib/api";
+import { apiService, formatPrice, CATEGORY_IDS, Product } from "@/lib/api";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
 
