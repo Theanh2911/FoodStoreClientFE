@@ -166,9 +166,9 @@ class ApiService {
       return { data };
     } catch (error) {
       // API Request failed
-      return { 
-        data: [] as unknown as T, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      return {
+        data: [] as unknown as T,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
       };
     }
   }
@@ -187,7 +187,7 @@ class ApiService {
     categoryId: number;
     image?: string;
   }): Promise<ApiResponse<Product>> {
-    
+
     return this.fetchWithErrorHandling<Product>(`${API_BASE_URL}/menu/products/create`, {
       method: 'POST',
       body: JSON.stringify(productData),
@@ -220,7 +220,7 @@ class ApiService {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
+
     // Nếu có token thì thêm Authorization header
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -239,7 +239,7 @@ class ApiService {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -290,11 +290,11 @@ class ApiService {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return this.fetchWithErrorHandling<UserOrder[]>(`${API_BASE_URL}/auth/orders/${userId}`, {
       headers,
     });
@@ -309,7 +309,7 @@ class ApiService {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
+
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -369,15 +369,20 @@ class ApiService {
       console.log('SSE connected:', event.data);
     });
 
+    // Listen for 'heartbeat' event
+    eventSource.addEventListener('heartbeat', (event: MessageEvent) => {
+      console.log('SSE heartbeat:', event.data);
+    });
+
     // Listen for 'payment-status' event - theo đúng quy trình backend
     eventSource.addEventListener('payment-status', (event: MessageEvent) => {
       try {
         console.log('Raw payment-status event received:', event.data);
-        
+
         // Parse JSON từ event.data
         const data: PaymentEvent = JSON.parse(event.data);
         console.log('Payment status event parsed:', data);
-        
+
         // Kiểm tra status === 'SUCCESS'
         if (data.status === 'SUCCESS') {
           console.log('Payment SUCCESS detected!');
@@ -404,6 +409,57 @@ class ApiService {
       eventSource.close();
     };
   }
+
+  // Listen to order status events via SSE
+  listenToOrderStatusEvents(
+    orderId: number,
+    onStatusChange: (order: UserOrder) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    const eventSource = new EventSource(`${API_BASE_URL}/orders/${orderId}/stream`);
+
+    // Listen for 'connected' event
+    eventSource.addEventListener('connected', (event: MessageEvent) => {
+      console.log(`Order SSE connected for order ${orderId}:`, event.data);
+    });
+
+    // Listen for 'heartbeat' event
+    eventSource.addEventListener('heartbeat', (event: MessageEvent) => {
+      console.log(`Order SSE heartbeat for order ${orderId}:`, event.data);
+    });
+
+    // Listen for 'order-status-changed' event
+    eventSource.addEventListener('order-status-changed', (event: MessageEvent) => {
+      try {
+        console.log(`Order status changed event received for ${orderId}:`, event.data);
+
+        // Parse JSON từ event.data
+        const orderData: UserOrder = JSON.parse(event.data);
+        console.log('Order status event parsed:', orderData);
+
+        // Call callback với dữ liệu order mới
+        onStatusChange(orderData);
+      } catch (error) {
+        console.error('Error parsing order status event:', error);
+        if (onError) {
+          onError(error instanceof Error ? error : new Error('Parse error'));
+        }
+      }
+    });
+
+    eventSource.onerror = (error) => {
+      console.error('Order SSE connection error:', error);
+      if (onError) {
+        onError(new Error('Order SSE connection failed'));
+      }
+    };
+
+    // Return cleanup function
+    return () => {
+      console.log('Closing order SSE connection for order:', orderId);
+      eventSource.close();
+    };
+  }
 }
 
 export const apiService = new ApiService();
@@ -421,7 +477,7 @@ export const getPlaceholderImage = (categoryName: string): string => {
     'drinks': '🥤',
     'additional': '🍯',
   };
-  
+
   return placeholders[categoryName.toLowerCase()] || '🍽️';
 };
 

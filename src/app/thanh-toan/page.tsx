@@ -30,13 +30,13 @@ export default function ThanhToanPage() {
         console.log('Fetching bank account from API...');
         const response = await apiService.getActiveBankAccount();
         console.log('API Response:', response);
-        
+
         if (response.error) {
           console.error('API Error:', response.error);
           setError('Không thể tải thông tin tài khoản ngân hàng');
           return;
         }
-        
+
         // Handle if API returns an array instead of single object
         let bankData = response.data;
         if (Array.isArray(response.data)) {
@@ -47,14 +47,14 @@ export default function ThanhToanPage() {
           }
           bankData = response.data[0];
         }
-        
+
         // Check if data exists and has required fields
         if (!bankData || !bankData.bankName) {
           console.error('Invalid data structure:', bankData);
           setError('Dữ liệu không hợp lệ');
           return;
         }
-        
+
         // Only set if status is ACTIVE
         if (bankData.status === 'ACTIVE') {
           console.log('Bank account loaded successfully:', bankData);
@@ -87,7 +87,7 @@ export default function ThanhToanPage() {
 
       // Get cached order IDs
       const orderIds = getCachedUnpaidOrderIds(session.sessionId);
-      
+
       if (orderIds.length === 0) {
         console.log('No unpaid orders found in cache');
         setUnpaidOrders([]);
@@ -96,14 +96,14 @@ export default function ThanhToanPage() {
 
       try {
         console.log('Fetching order details for IDs:', orderIds);
-        
+
         // Fetch each order detail from API
-        const orderPromises = orderIds.map(orderId => 
+        const orderPromises = orderIds.map(orderId =>
           apiService.getOrderDetail(orderId)
         );
-        
+
         const results = await Promise.all(orderPromises);
-        
+
         // Filter out errors and get valid orders
         const validOrders = results
           .filter(result => !result.error && result.data)
@@ -126,6 +126,67 @@ export default function ThanhToanPage() {
     fetchUnpaidOrders();
   }, []);
 
+  // Listen to order status changes for all unpaid orders
+  React.useEffect(() => {
+    if (unpaidOrders.length === 0) {
+      return;
+    }
+
+    console.log('Starting order status SSE listeners for unpaid orders:', unpaidOrders.map(o => o.orderId));
+
+    // Create cleanup functions array
+    const cleanupFunctions: (() => void)[] = [];
+
+    // Start SSE listener for each unpaid order
+    unpaidOrders.forEach((order) => {
+      const cleanup = apiService.listenToOrderStatusEvents(
+        order.orderId,
+        (updatedOrder: UserOrder) => {
+          console.log('Order status updated:', updatedOrder);
+
+          // Update order in the list
+          setUnpaidOrders(prev =>
+            prev.map(o => o.orderId === updatedOrder.orderId ? updatedOrder : o)
+          );
+
+          // If order becomes PAID or COMPLETED, show success and remove from list
+          const status = (updatedOrder.status || '').toUpperCase();
+          if (status === 'PAID' || status === 'COMPLETED') {
+            // Show success modal with order info
+            const successEvent: PaymentEvent = {
+              orderId: updatedOrder.orderId,
+              paymentId: 0, // Not available from order status
+              status: 'SUCCESS',
+              amount: updatedOrder.totalAmount,
+              message: 'Đơn hàng đã được thanh toán thành công',
+              gateway: 'N/A',
+              transactionDate: updatedOrder.orderTime
+            };
+            setPaymentSuccess(successEvent);
+            setIsPaymentSuccessModalOpen(true);
+
+            // Remove from unpaid orders list
+            if (sessionId) {
+              removeCachedUnpaidOrderId(sessionId, updatedOrder.orderId);
+            }
+            setUnpaidOrders(prev => prev.filter(o => o.orderId !== updatedOrder.orderId));
+          }
+        },
+        (error) => {
+          console.error('Order status SSE error:', error);
+        }
+      );
+
+      cleanupFunctions.push(cleanup);
+    });
+
+    // Cleanup all SSE connections when component unmounts or orders change
+    return () => {
+      console.log('Cleaning up order status SSE listeners');
+      cleanupFunctions.forEach(cleanup => cleanup());
+    };
+  }, [unpaidOrders.length, sessionId]);
+
   // Listen to payment events via SSE when payment modal is open
   React.useEffect(() => {
     if (!selectedOrder || !isPaymentModalOpen) {
@@ -133,25 +194,25 @@ export default function ThanhToanPage() {
     }
 
     console.log('Starting SSE listener for order:', selectedOrder.orderId);
-    
+
     const cleanup = apiService.listenToPaymentEvents(
       selectedOrder.orderId,
       (event: PaymentEvent) => {
         console.log('Payment event received:', event);
-        
+
         if (event.status === 'SUCCESS') {
           // Show success modal
           setPaymentSuccess(event);
           setIsPaymentSuccessModalOpen(true);
-          
+
           // Close payment modal
           setIsPaymentModalOpen(false);
-          
+
           // Remove order from cache and UI
           if (sessionId) {
             removeCachedUnpaidOrderId(sessionId, event.orderId);
           }
-          
+
           // Update unpaid orders list
           setUnpaidOrders(prev => prev.filter(o => o.orderId !== event.orderId));
         }
@@ -234,6 +295,21 @@ export default function ThanhToanPage() {
     return Math.trunc(totalAmount);
   };
 
+  const isPaymentButtonDisabled = (order: UserOrder): boolean => {
+    const status = (order.status || '').toUpperCase();
+    // Disable if PENDING or PAID or COMPLETED
+    // Only enable when SERVED
+    return status !== 'SERVED';
+  };
+
+  const getPaymentButtonText = (order: UserOrder): string => {
+    const status = (order.status || '').toUpperCase();
+    if (status === 'PENDING') return 'Đang chế biến...';
+    if (status === 'PAID' || status === 'COMPLETED') return 'Đã thanh toán';
+    if (status === 'SERVED') return 'Thanh toán';
+    return 'Thanh toán';
+  };
+
   const buildVietQrImageUrl = (order: UserOrder, bank: BankAccount) => {
     const amount = getOrderAmountInt(order.totalAmount);
     const addInfo = `YHF${order.orderId}`;
@@ -243,7 +319,7 @@ export default function ThanhToanPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNav />
-      
+
       <main className="container mx-auto p-3 sm:p-4 lg:p-6">
         {/* Header */}
         <div className="mb-6">
@@ -307,10 +383,11 @@ export default function ThanhToanPage() {
                             Tổng: {order.totalAmount.toLocaleString("vi-VN")} VNĐ
                           </div>
                           <Button
-                            className="bg-green-600 hover:bg-green-700"
+                            className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                             onClick={() => openPaymentModal(order)}
+                            disabled={isPaymentButtonDisabled(order)}
                           >
-                            Thanh toán
+                            {getPaymentButtonText(order)}
                           </Button>
                         </div>
                       </CardContent>
@@ -561,7 +638,7 @@ export default function ThanhToanPage() {
 
                 {/* Close Button */}
                 <div className="flex justify-center">
-                  <Button 
+                  <Button
                     className="bg-green-600 hover:bg-green-700"
                     onClick={() => {
                       setIsPaymentSuccessModalOpen(false);
