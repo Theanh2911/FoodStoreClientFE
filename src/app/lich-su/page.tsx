@@ -280,14 +280,28 @@ export default function LichSuPage() {
         formData.append('images', image);
       });
 
+      // Debug: Log FormData contents
+      console.log('=== Submitting Rating ===');
+      console.log('Order ID:', selectedOrderForRating.orderId);
+      console.log('FormData contents:');
+      for (let pair of formData.entries()) {
+        if (pair[1] instanceof File) {
+          console.log(`  ${pair[0]}: [File] ${pair[1].name} (${pair[1].size} bytes)`);
+        } else {
+          console.log(`  ${pair[0]}:`, pair[1]);
+        }
+      }
+
       const response = await apiService.createRating(selectedOrderForRating.orderId, formData);
 
       if (response.error) {
+        console.error('Rating error:', response.error);
         alert('Lỗi: ' + response.error);
         return;
       }
 
       // Success
+      console.log('Rating submitted successfully');
       alert('Đánh giá thành công!');
       
       // Update order list to mark as rated

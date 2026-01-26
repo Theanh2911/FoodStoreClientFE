@@ -346,8 +346,10 @@ class ApiService {
         throw new Error(errorData.message || `API Error: ${response.status}`);
       }
 
-      const data = await response.json();
-      return { data };
+      const responseData = await response.json();
+      // Backend returns { message: "...", data: {...} }
+      // Extract the data field
+      return { data: responseData.data || responseData };
     } catch (error) {
       return {
         data: {} as RatingResponse,
