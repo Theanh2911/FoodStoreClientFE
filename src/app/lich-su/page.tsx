@@ -236,7 +236,7 @@ export default function LichSuPage() {
         handleCloseUserProfile();
         handleLogout();
       }, 2000);
-    } catch (error) {
+    } catch {
       setUpdatePasswordMessage({
         type: 'error',
         text: 'Có lỗi xảy ra. Vui lòng thử lại.'
@@ -899,6 +899,7 @@ export default function LichSuPage() {
                 <div className="grid grid-cols-3 gap-3 mb-3">
                   {imagePreviewUrls.map((url, index) => (
                     <div key={index} className="relative group">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={url}
                         alt={`Preview ${index + 1}`}
