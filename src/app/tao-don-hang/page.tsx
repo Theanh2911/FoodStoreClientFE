@@ -12,7 +12,7 @@ import { getTableSession } from "@/lib/session";
 import { getUserSession } from "@/lib/auth";
 import { addCachedUnpaidOrderId } from "@/lib/unpaid-orders";
 import { ProductImage } from "@/components/product-image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import importFresh from "import-fresh";
 
 interface CartItem extends Product {
@@ -30,6 +30,7 @@ export default function TaoDonHangPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const categories = React.useMemo(() => {
     const uniqueCategories = Array.from(
@@ -63,6 +64,32 @@ export default function TaoDonHangPage() {
 
     fetchProducts();
   }, []);
+
+  // Handle AI suggested products from URL params
+  React.useEffect(() => {
+    if (products.length === 0) return;
+
+    const aiParam = searchParams.get('ai');
+    if (!aiParam) return;
+
+    // Parse product IDs from URL
+    const productIds = aiParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+    
+    if (productIds.length === 0) return;
+
+    // Add AI suggested products to order
+    const suggestedProducts = products.filter(p => productIds.includes(p.productId));
+    
+    if (suggestedProducts.length > 0) {
+      const newOrderItems: CartItem[] = suggestedProducts.map(product => ({
+        ...product,
+        quantity: 1,
+        note: ""
+      }));
+      
+      setOrderItems(newOrderItems);
+    }
+  }, [products, searchParams]);
 
   const addToOrder = (product: Product) => {
     setOrderItems(prev => {

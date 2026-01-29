@@ -8,37 +8,49 @@ import { Loader2, AlertCircle, ShoppingCart } from "lucide-react";
 import { apiService, formatPrice, CATEGORY_IDS, Product } from "@/lib/api";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
+import { AIFoodAssistant } from "@/components/ai-food-assistant";
 
 export default function DoAnThemPage() {
   const [additionalItems, setAdditionalItems] = React.useState<Product[]>([]);
+  const [allProducts, setAllProducts] = React.useState<Product[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const router = useRouter();
 
-  // Fetch additional items from backend
+  // Fetch additional items and all products from backend
   React.useEffect(() => {
-    const fetchAdditionalItems = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       setError(null);
       
-      const result = await apiService.getProductsByCategory(CATEGORY_IDS.ADDITIONAL);
+      const [additionalResult, allResult] = await Promise.all([
+        apiService.getProductsByCategory(CATEGORY_IDS.ADDITIONAL),
+        apiService.getAllProducts()
+      ]);
       
-      if (result.error) {
-        setError(result.error);
+      if (additionalResult.error) {
+        setError(additionalResult.error);
       } else {
-        setAdditionalItems(result.data);
+        setAdditionalItems(additionalResult.data);
+      }
+
+      if (!allResult.error) {
+        setAllProducts(allResult.data);
       }
       
       setIsLoading(false);
     };
 
-    fetchAdditionalItems();
+    fetchData();
   }, []);
 
 
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNav />
+      
+      {/* AI Food Assistant */}
+      <AIFoodAssistant allProducts={allProducts} />
       
       <main className="container mx-auto p-3 sm:p-4 lg:p-6">
         {/* Header */}

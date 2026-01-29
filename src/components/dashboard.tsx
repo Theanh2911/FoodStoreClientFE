@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { apiService, formatPrice, Product } from "@/lib/api";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
+import { AIFoodAssistant } from "@/components/ai-food-assistant";
 
 export function Dashboard() {
   const [products, setProducts] = React.useState<Product[]>([]);
@@ -39,6 +40,9 @@ export function Dashboard() {
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
       <DashboardNav />
+      
+      {/* AI Food Assistant */}
+      <AIFoodAssistant allProducts={products} />
       
       {/* Main Dashboard Content */}
       <main className="container mx-auto p-3 sm:p-4 lg:p-6">

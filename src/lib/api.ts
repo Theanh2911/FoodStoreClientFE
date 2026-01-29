@@ -147,6 +147,17 @@ export interface RatingResponse {
   orderDetails: UserOrder;
 }
 
+export interface AISuggestionRequest {
+  userDemand: string;
+}
+
+export interface AISuggestionResponse {
+  main_dish: string;
+  side_dish: string;
+  drink: string;
+  reason: string;
+}
+
 class ApiService {
   private async fetchWithErrorHandling<T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
     try {
@@ -339,6 +350,13 @@ class ApiService {
       method: 'PUT',
       headers,
       body: JSON.stringify({ oldPassword, newPassword }),
+    });
+  }
+
+  async getAISuggestion(userDemand: string): Promise<ApiResponse<AISuggestionResponse>> {
+    return this.fetchWithErrorHandling<AISuggestionResponse>(`${API_BASE_URL}/ai/suggestion`, {
+      method: 'POST',
+      body: JSON.stringify({ userDemand }),
     });
   }
 
