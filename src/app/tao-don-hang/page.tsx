@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { DashboardNav } from "@/components/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,44 @@ interface CartItem extends Product {
   note?: string;
 }
 
+// Component to handle AI suggestions from URL params
+function AIOrderLoader({ 
+  products, 
+  onLoadItems 
+}: { 
+  products: Product[]; 
+  onLoadItems: (items: CartItem[]) => void;
+}) {
+  const searchParams = useSearchParams();
+
+  React.useEffect(() => {
+    if (products.length === 0) return;
+
+    const aiParam = searchParams.get('ai');
+    if (!aiParam) return;
+
+    // Parse product IDs from URL
+    const productIds = aiParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
+    
+    if (productIds.length === 0) return;
+
+    // Add AI suggested products to order
+    const suggestedProducts = products.filter(p => productIds.includes(p.productId));
+    
+    if (suggestedProducts.length > 0) {
+      const newOrderItems: CartItem[] = suggestedProducts.map(product => ({
+        ...product,
+        quantity: 1,
+        note: ""
+      }));
+      
+      onLoadItems(newOrderItems);
+    }
+  }, [products, searchParams, onLoadItems]);
+
+  return null;
+}
+
 export default function TaoDonHangPage() {
   const [products, setProducts] = React.useState<Product[]>([]);
   const [orderItems, setOrderItems] = React.useState<CartItem[]>([]);
@@ -28,7 +67,6 @@ export default function TaoDonHangPage() {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const searchParams = useSearchParams();
 
   const categories = React.useMemo(() => {
     const uniqueCategories = Array.from(
@@ -63,31 +101,9 @@ export default function TaoDonHangPage() {
     fetchProducts();
   }, []);
 
-  // Handle AI suggested products from URL params
-  React.useEffect(() => {
-    if (products.length === 0) return;
-
-    const aiParam = searchParams.get('ai');
-    if (!aiParam) return;
-
-    // Parse product IDs from URL
-    const productIds = aiParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-    
-    if (productIds.length === 0) return;
-
-    // Add AI suggested products to order
-    const suggestedProducts = products.filter(p => productIds.includes(p.productId));
-    
-    if (suggestedProducts.length > 0) {
-      const newOrderItems: CartItem[] = suggestedProducts.map(product => ({
-        ...product,
-        quantity: 1,
-        note: ""
-      }));
-      
-      setOrderItems(newOrderItems);
-    }
-  }, [products, searchParams]);
+  const handleLoadAIItems = React.useCallback((items: CartItem[]) => {
+    setOrderItems(items);
+  }, []);
 
   const addToOrder = (product: Product) => {
     setOrderItems(prev => {
@@ -184,6 +200,11 @@ export default function TaoDonHangPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNav />
+      
+      {/* AI Order Loader with Suspense */}
+      <Suspense fallback={null}>
+        <AIOrderLoader products={products} onLoadItems={handleLoadAIItems} />
+      </Suspense>
       
       <main className="container mx-auto p-3 sm:p-4 lg:p-6">
         {/* Header */}
