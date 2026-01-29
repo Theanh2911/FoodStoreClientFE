@@ -132,11 +132,9 @@ export default function TaoDonHangPage() {
 
       if (!userSession) {
         orderData.name = `Khách vãng lai bàn ${session.tableNumber}`;
-        console.log('Creating order for guest user at table:', session.tableNumber);
       } else {
         orderData.name = userSession.name || `Khách bàn ${session.tableNumber}`;
         orderData.userId = userSession.userId;
-        console.log('Creating order for authenticated user:', userSession.name);
       }
 
       const result = await apiService.createOrder(orderData);

@@ -27,9 +27,7 @@ export default function ThanhToanPage() {
     const fetchBankAccount = async () => {
       try {
         setIsLoading(true);
-        console.log('Fetching bank account from API...');
         const response = await apiService.getActiveBankAccount();
-        console.log('API Response:', response);
 
         if (response.error) {
           console.error('API Error:', response.error);
@@ -40,7 +38,6 @@ export default function ThanhToanPage() {
         // Handle if API returns an array instead of single object
         let bankData = response.data;
         if (Array.isArray(response.data)) {
-          console.log('API returned array, taking first item');
           if (response.data.length === 0) {
             setError('Không có tài khoản ngân hàng');
             return;
@@ -57,7 +54,6 @@ export default function ThanhToanPage() {
 
         // Only set if status is ACTIVE
         if (bankData.status === 'ACTIVE') {
-          console.log('Bank account loaded successfully:', bankData);
           setBankAccount(bankData);
         } else {
           console.warn('Bank account is not active:', bankData.status);
@@ -89,14 +85,11 @@ export default function ThanhToanPage() {
       const orderIds = getCachedUnpaidOrderIds(session.sessionId);
 
       if (orderIds.length === 0) {
-        console.log('No unpaid orders found in cache');
         setUnpaidOrders([]);
         return;
       }
 
       try {
-        console.log('Fetching order details for IDs:', orderIds);
-
         // Fetch each order detail from API
         const orderPromises = orderIds.map(orderId =>
           apiService.getOrderDetail(orderId)
@@ -115,7 +108,6 @@ export default function ThanhToanPage() {
           return s !== "PAID" && s !== "COMPLETED" && s !== "DONE";
         });
 
-        console.log('Loaded unpaid orders from API:', unpaidOnly);
         setUnpaidOrders(unpaidOnly);
       } catch (err) {
         console.error('Error fetching unpaid orders:', err);

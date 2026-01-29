@@ -18,7 +18,6 @@ export default function QRSessionPage() {
     const createSession = async () => {
       try {
         const tableNumber = params.tableNumber as string;
-        console.log('Table number:', tableNumber);
         
         if (!tableNumber || isNaN(Number(tableNumber))) {
           console.error('Invalid table number');
@@ -26,8 +25,6 @@ export default function QRSessionPage() {
           setErrorMessage('Số bàn không hợp lệ');
           return;
         }
-
-        console.log('Calling API:', `/api/session/${tableNumber}`);
         
         // Call POST API to create session (via Next.js API route)
         const response = await fetch(`/api/session/${tableNumber}`, {
@@ -37,14 +34,11 @@ export default function QRSessionPage() {
           },
         });
 
-        console.log('API response status:', response.status);
-
         if (!response.ok) {
           throw new Error(`API Error: ${response.status} ${response.statusText}`);
         }
 
         const data: SessionResponse = await response.json();
-        console.log('Session data:', data);
 
         // Store session data with 30-minute expiration
         const sessionData = {
@@ -67,7 +61,6 @@ export default function QRSessionPage() {
         console.error('Error creating session:', error);
         setStatus('error');
         const errorMsg = error instanceof Error ? error.message : 'Đã xảy ra lỗi khi tạo phiên';
-        console.error('Error message:', errorMsg);
         setErrorMessage(errorMsg);
       }
     };
