@@ -43,6 +43,15 @@ export default function LichSuPage() {
   const [imagePreviewUrls, setImagePreviewUrls] = React.useState<string[]>([]);
   const [isSubmittingRating, setIsSubmittingRating] = React.useState(false);
 
+  // User profile modal state
+  const [showUserProfileModal, setShowUserProfileModal] = React.useState(false);
+  const [oldPassword, setOldPassword] = React.useState("");
+  const [newPassword, setNewPassword] = React.useState("");
+  const [showOldPassword, setShowOldPassword] = React.useState(false);
+  const [showNewPassword, setShowNewPassword] = React.useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = React.useState(false);
+  const [updatePasswordMessage, setUpdatePasswordMessage] = React.useState<{type: 'success' | 'error', text: string} | null>(null);
+
   // Check authentication on component mount
   React.useEffect(() => {
     const checkAuth = () => {
@@ -178,6 +187,62 @@ export default function LichSuPage() {
     setOrders([]);
     setIsLoggedIn(false);
     setShowAuthModal(true);
+  };
+
+  // Open user profile modal
+  const handleOpenUserProfile = () => {
+    setShowUserProfileModal(true);
+    setOldPassword("");
+    setNewPassword("");
+    setUpdatePasswordMessage(null);
+  };
+
+  // Close user profile modal
+  const handleCloseUserProfile = () => {
+    setShowUserProfileModal(false);
+    setOldPassword("");
+    setNewPassword("");
+    setShowOldPassword(false);
+    setShowNewPassword(false);
+    setUpdatePasswordMessage(null);
+  };
+
+  // Handle update password
+  const handleUpdatePassword = async () => {
+    setIsUpdatingPassword(true);
+    setUpdatePasswordMessage(null);
+
+    try {
+      const response = await apiService.updatePassword(oldPassword, newPassword);
+
+      if (response.error) {
+        setUpdatePasswordMessage({
+          type: 'error',
+          text: response.error
+        });
+        setIsUpdatingPassword(false);
+        return;
+      }
+
+      // Success
+      setUpdatePasswordMessage({
+        type: 'success',
+        text: 'Cập nhật mật khẩu thành công! Đang đăng xuất...'
+      });
+
+      // Wait 2 seconds then logout
+      setTimeout(() => {
+        setIsUpdatingPassword(false);
+        handleCloseUserProfile();
+        handleLogout();
+      }, 2000);
+    } catch (error) {
+      setUpdatePasswordMessage({
+        type: 'error',
+        text: 'Có lỗi xảy ra. Vui lòng thử lại.'
+      });
+      setIsUpdatingPassword(false);
+    }
   };
 
   // Open rating modal
@@ -356,7 +421,12 @@ export default function LichSuPage() {
           {isLoggedIn && user && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="text-sm text-gray-600">
-                Xin chào, <span className="font-medium">{user.name}</span>
+                Xin chào, <button 
+                  onClick={handleOpenUserProfile}
+                  className="font-medium text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                >
+                  {user.name}
+                </button>
               </div>
               <Button 
                 variant="outline"
@@ -630,6 +700,149 @@ export default function LichSuPage() {
             </div>
           </form>
 
+        </DialogContent>
+      </Dialog>
+
+      {/* User Profile Modal */}
+      <Dialog open={showUserProfileModal} onOpenChange={(open) => !open && handleCloseUserProfile()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              Thông tin tài khoản
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5">
+            {/* User Info - Read Only */}
+            <div className="space-y-3">
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center mb-1">
+                  <User className="h-4 w-4 text-gray-500 mr-2" />
+                  <span className="text-sm font-medium text-gray-700">Họ và tên</span>
+                </div>
+                <p className="text-base font-semibold text-gray-900 ml-6">
+                  {user?.name}
+                </p>
+              </div>
+
+              <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center mb-1">
+                  <Phone className="h-4 w-4 text-gray-500 mr-2" />
+                  <span className="text-sm font-medium text-gray-700">Số điện thoại</span>
+                </div>
+                <p className="text-base font-semibold text-gray-900 ml-6">
+                  {user?.phoneNumber}
+                </p>
+              </div>
+            </div>
+
+            {/* Update Password Section */}
+            <div className="pt-4 border-t border-gray-200">
+              <h3 className="font-semibold text-gray-900 mb-3">Đổi mật khẩu</h3>
+              
+              <div className="space-y-3">
+                {/* Old Password */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="oldPassword" className="text-sm font-medium">
+                    Mật khẩu hiện tại
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="oldPassword"
+                      type={showOldPassword ? "text" : "password"}
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
+                      placeholder="Nhập mật khẩu hiện tại"
+                      className="pl-10 pr-10"
+                      disabled={isUpdatingPassword}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      disabled={isUpdatingPassword}
+                    >
+                      {showOldPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="newPassword" className="text-sm font-medium">
+                    Mật khẩu mới
+                  </Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? "text" : "password"}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Nhập mật khẩu mới"
+                      className="pl-10 pr-10"
+                      disabled={isUpdatingPassword}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      disabled={isUpdatingPassword}
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Message Display */}
+              {updatePasswordMessage && (
+                <div className={`mt-3 p-3 rounded-lg ${
+                  updatePasswordMessage.type === 'success' 
+                    ? 'bg-green-50 border border-green-200' 
+                    : 'bg-red-50 border border-red-200'
+                }`}>
+                  <p className={`text-sm ${
+                    updatePasswordMessage.type === 'success' 
+                      ? 'text-green-700' 
+                      : 'text-red-700'
+                  }`}>
+                    {updatePasswordMessage.text}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={handleCloseUserProfile}
+                className="flex-1"
+                disabled={isUpdatingPassword}
+              >
+                Quay lại
+              </Button>
+              <Button
+                onClick={handleUpdatePassword}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                disabled={!oldPassword || !newPassword || isUpdatingPassword}
+              >
+                {isUpdatingPassword ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Đang cập nhật...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Cập nhật mật khẩu
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 

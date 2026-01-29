@@ -320,6 +320,28 @@ class ApiService {
     });
   }
 
+  async updatePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
+    const token = localStorage.getItem('accessToken');
+    
+    if (!token) {
+      return {
+        data: {} as { message: string },
+        error: 'Vui lòng đăng nhập để đổi mật khẩu'
+      };
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    };
+
+    return this.fetchWithErrorHandling<{ message: string }>(`${API_BASE_URL}/auth/update-password`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ oldPassword, newPassword }),
+    });
+  }
+
   // Create rating for an order
   async createRating(orderId: number, ratingData: FormData): Promise<ApiResponse<RatingResponse>> {
     const token = localStorage.getItem('accessToken');
