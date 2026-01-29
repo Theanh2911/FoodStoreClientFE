@@ -332,6 +332,8 @@ class ApiService {
     }
 
     try {
+      console.log('📤 Sending rating to:', `${API_BASE_URL}/ratings/${orderId}`);
+      
       const response = await fetch(`${API_BASE_URL}/ratings/${orderId}`, {
         method: 'POST',
         headers: {
@@ -341,16 +343,21 @@ class ApiService {
         body: ratingData,
       });
 
+      console.log('📥 Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
+        console.error('❌ Backend error response:', errorData);
         throw new Error(errorData.message || `API Error: ${response.status}`);
       }
 
       const responseData = await response.json();
+      console.log('✅ Rating created successfully:', responseData);
       // Backend returns { message: "...", data: {...} }
       // Extract the data field
       return { data: responseData.data || responseData };
     } catch (error) {
+      console.error('💥 Rating creation failed:', error);
       return {
         data: {} as RatingResponse,
         error: error instanceof Error ? error.message : 'Không thể gửi đánh giá'
