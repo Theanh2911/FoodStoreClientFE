@@ -177,6 +177,7 @@ export default function ThanhToanPage() {
       console.log('Cleaning up order status SSE listeners');
       cleanupFunctions.forEach(cleanup => cleanup());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unpaidOrders.length, sessionId]);
 
   // Listen to payment events via SSE when payment modal is open
@@ -226,7 +227,7 @@ export default function ThanhToanPage() {
       await navigator.clipboard.writeText(text);
       setCopiedField(fieldName);
       setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
+    } catch {
       // Failed to copy
     }
   };
@@ -490,6 +491,7 @@ export default function ThanhToanPage() {
                 {bankAccount.qrCodeImageUrl ? (
                   <div className="flex justify-center">
                     <div className="p-4 bg-white rounded-lg shadow-sm border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={bankAccount.qrCodeImageUrl}
                         alt="QR Code thanh toán"
@@ -534,6 +536,7 @@ export default function ThanhToanPage() {
               <div className="space-y-4">
                 <div className="flex justify-center">
                   <div className="p-4 bg-white rounded-lg shadow-sm border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={buildVietQrImageUrl(selectedOrder, bankAccount)}
                       alt="VietQR"

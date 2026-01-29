@@ -6,14 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, ArrowLeft, Filter, Receipt, CheckCircle } from "lucide-react";
+import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, Receipt, CheckCircle } from "lucide-react";
 import { apiService, formatPrice, Product, UnifiedOrderRequest, OrderItemRequest } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
 import { getUserSession } from "@/lib/auth";
 import { addCachedUnpaidOrderId } from "@/lib/unpaid-orders";
 import { ProductImage } from "@/components/product-image";
-import { useRouter, useSearchParams } from "next/navigation";
-import importFresh from "import-fresh";
+import { useSearchParams } from "next/navigation";
 
 interface CartItem extends Product {
   quantity: number;
@@ -29,7 +28,6 @@ export default function TaoDonHangPage() {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const categories = React.useMemo(() => {
