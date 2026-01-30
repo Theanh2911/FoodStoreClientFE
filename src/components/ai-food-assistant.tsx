@@ -175,15 +175,15 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
           {/* Panel */}
           <div className="fixed top-0 right-0 h-[75vh] w-full sm:w-[500px] bg-white z-50 shadow-2xl animate-slide-in-right overflow-hidden flex flex-col rounded-l-2xl">
             {/* Header */}
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-6 text-white">
-              <div className="flex items-center justify-between mb-2">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 text-white">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="bg-white/20 p-2 rounded-full">
-                    <ChefHat className="h-6 w-6" />
+                    <ChefHat className="h-5 w-5" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold">Trợ lý AI</h2>
-                    <p className="text-sm text-white/90">Bạn chưa biết ăn gì?</p>
+                    <h2 className="text-lg font-bold">Bếp phó Sanji</h2>
+                    <p className="text-xs text-white/90">Bạn chưa biết ăn gì?</p>
                   </div>
                 </div>
                 <button
@@ -196,17 +196,17 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {/* Input Area */}
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
-                  Mô tả món bạn muốn ăn
+                  Muốn ăn gì nào ?
                 </label>
                 <Textarea
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
-                  placeholder="Ví dụ: Tôi muốn món cơm không phải cơm rang, thích ăn cay..."
-                  className="min-h-[100px] resize-none"
+                  placeholder=""
+                  className="min-h-[80px] resize-none"
                   disabled={isLoading}
                 />
               </div>
@@ -257,16 +257,16 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
               {/* Loading State */}
               {isLoading && (
                 <Card className="bg-purple-50 border-purple-200">
-                  <CardContent className="p-6 text-center">
-                    <div className="flex flex-col items-center gap-3">
+                  <CardContent className="p-4 text-center">
+                    <div className="flex flex-col items-center gap-2">
                       <div className="relative">
-                        <ChefHat className="h-12 w-12 text-purple-500 animate-bounce" />
-                        <Sparkles className="h-5 w-5 text-pink-500 absolute -top-1 -right-1 animate-ping" />
+                        <ChefHat className="h-10 w-10 text-purple-500 animate-bounce" />
+                        <Sparkles className="h-4 w-4 text-pink-500 absolute -top-1 -right-1 animate-ping" />
                       </div>
-                      <p className="text-purple-700 font-medium">
+                      <p className="text-sm text-purple-700 font-medium">
                         Đang phân tích sở thích của bạn...
                       </p>
-                      <p className="text-sm text-purple-600">Hmmm... 🤔</p>
+                      <p className="text-xs text-purple-600">Hmmm... 🤔</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -274,42 +274,42 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
 
               {/* Results */}
               {suggestedDishes.length > 0 && !isLoading && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {/* Reason */}
                   <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
-                    <CardContent className="p-4">
+                    <CardContent className="p-3">
                       <div className="flex items-start gap-2">
-                        <Sparkles className="h-5 w-5 text-purple-500 mt-0.5 flex-shrink-0" />
-                        <p className="text-sm text-gray-700">{reason}</p>
+                        <Sparkles className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-gray-700">{reason}</p>
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Suggested Dishes */}
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {suggestedDishes.map((dish, index) => (
                       <Card key={index} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-4">
-                          <div className="flex items-center gap-3">
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-2">
                             <ProductImage
                               imageUrl={dish.product.image}
                               productName={dish.product.name}
                               categoryName={dish.product.category.name}
-                              className="w-16 h-16 flex-shrink-0"
+                              className="w-12 h-12 flex-shrink-0"
                             />
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-0.5 rounded">
+                              <div className="flex items-center gap-1 mb-0.5">
+                                <span className="text-xs font-medium text-purple-600 bg-purple-100 px-1.5 py-0.5 rounded">
                                   {getDishTypeLabel(dish.type)}
                                 </span>
                               </div>
-                              <p className="font-semibold text-gray-900 truncate">
+                              <p className="text-sm font-semibold text-gray-900 truncate">
                                 {dish.product.name}
                               </p>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-xs text-gray-500">
                                 {dish.product.category.name}
                               </p>
-                              <p className="text-sm font-semibold text-green-600 mt-1">
+                              <p className="text-xs font-semibold text-green-600 mt-0.5">
                                 {dish.product.price.toLocaleString('vi-VN')} VNĐ
                               </p>
                             </div>
