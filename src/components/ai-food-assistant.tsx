@@ -173,7 +173,7 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
           />
 
           {/* Panel */}
-          <div className="fixed top-0 right-0 h-[75vh] w-full sm:w-[500px] bg-white z-50 shadow-2xl animate-slide-in-right overflow-hidden flex flex-col rounded-l-2xl">
+          <div className="fixed top-20 right-0 h-[40vh] w-full sm:w-[500px] bg-white z-50 shadow-2xl animate-slide-in-right overflow-hidden flex flex-col rounded-l-2xl">
             {/* Header */}
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-4 text-white">
               <div className="flex items-center justify-between">
@@ -183,7 +183,6 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold">Bếp phó Sanji</h2>
-                    <p className="text-xs text-white/90">Bạn chưa biết ăn gì?</p>
                   </div>
                 </div>
                 <button
