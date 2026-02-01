@@ -41,6 +41,7 @@ export interface UnifiedOrderRequest {
   tableNumber: number;
   name?: string; // Tên khách (guest hoặc user đã đăng nhập)
   userId?: number; // Id khách hàng (khi đã đăng nhập)
+  promotionCode?: string; // Mã khuyến mãi
   total: number;
   items: OrderItemRequest[];
 }

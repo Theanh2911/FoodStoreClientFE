@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, Receipt, CheckCircle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, Receipt, CheckCircle, Tag } from "lucide-react";
 import { apiService, formatPrice, Product, UnifiedOrderRequest, OrderItemRequest } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
 import { getUserSession } from "@/lib/auth";
@@ -67,6 +68,7 @@ export default function TaoDonHangPage() {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const [promotionCode, setPromotionCode] = React.useState<string>("");
 
   const categories = React.useMemo(() => {
     const uniqueCategories = Array.from(
@@ -171,6 +173,11 @@ export default function TaoDonHangPage() {
         items: items
       };
 
+      // Thêm mã giảm giá nếu có
+      if (promotionCode.trim()) {
+        orderData.promotionCode = promotionCode.trim();
+      }
+
       if (!userSession) {
         orderData.name = `Khách vãng lai bàn ${session.tableNumber}`;
       } else {
@@ -189,6 +196,7 @@ export default function TaoDonHangPage() {
       addCachedUnpaidOrderId(session.sessionId, result.data.orderId);
       setShowConfirmModal(false);
       setOrderItems([]);
+      setPromotionCode("");
       setIsSubmitting(false);
     } catch (error) {
       console.error('Error creating order:', error);
@@ -442,8 +450,22 @@ export default function TaoDonHangPage() {
                 ))}
               </div>
             </div>
+
+            {/* Promotion Code Input */}
+            <div className="border-t pt-4">
+              <h3 className="font-semibold mb-2 flex items-center">
+                <Tag className="h-4 w-4 mr-2" />
+                Mã giảm giá
+              </h3>
+              <Input
+                value={promotionCode}
+                onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
+                placeholder="Nhập mã giảm giá (nếu có)"
+                className="text-sm"
+              />
+            </div>
             
-            <div className="border-t pt-3">
+            <div className="border-t pt-3 mt-4">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-lg font-bold">Tổng cộng:</span>
                 <span className="text-xl font-bold text-green-600">
@@ -474,6 +496,7 @@ export default function TaoDonHangPage() {
               onClick={() => {
                 setShowConfirmModal(false);
                 setSubmitError(null);
+                setPromotionCode("");
               }}
               disabled={isSubmitting}
             >
