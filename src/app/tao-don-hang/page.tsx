@@ -287,12 +287,12 @@ export default function TaoDonHangPage() {
       const orderData: UnifiedOrderRequest = {
         sessionId: session.sessionId,
         tableNumber: session.tableNumber,
-        total: calculateTotal(),
+        total: appliedPromotion ? calculateFinalTotal() : calculateTotal(),
         items: items
       };
 
       // Thêm mã giảm giá nếu có
-      if (promotionCode.trim()) {
+      if (promotionCode.trim() && appliedPromotion) {
         orderData.promotionCode = promotionCode.trim();
       }
 
@@ -598,7 +598,7 @@ export default function TaoDonHangPage() {
                   type="button"
                   variant="outline"
                   onClick={checkPromotionCode}
-                  disabled={!promotionCode.trim()}
+                  disabled={!promotionCode.trim() || appliedPromotion !== null}
                 >
                   Áp dụng
                 </Button>
@@ -662,7 +662,7 @@ export default function TaoDonHangPage() {
             <Button 
               className="bg-green-600 hover:bg-green-700"
               onClick={handleFinalConfirm}
-              disabled={isSubmitting}
+              disabled={isSubmitting || (promotionCode.trim() !== "" && !appliedPromotion)}
             >
               {isSubmitting ? (
                 <>
