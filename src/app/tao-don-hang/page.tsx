@@ -8,13 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, Receipt, CheckCircle, Tag } from "lucide-react";
+import { Loader2, AlertCircle, Plus, Minus, ShoppingCart, Receipt, CheckCircle, Tag, XCircle } from "lucide-react";
 import { apiService, formatPrice, Product, UnifiedOrderRequest, OrderItemRequest } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
 import { getUserSession } from "@/lib/auth";
 import { addCachedUnpaidOrderId } from "@/lib/unpaid-orders";
 import { ProductImage } from "@/components/product-image";
 import { useSearchParams } from "next/navigation";
+import { PromotionFloatingButton } from "@/components/promotion-floating-button";
 
 interface CartItem extends Product {
   quantity: number;
@@ -67,8 +68,11 @@ export default function TaoDonHangPage() {
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [promotionCode, setPromotionCode] = React.useState<string>("");
+  const [appliedPromotion, setAppliedPromotion] = React.useState<{discountPercentage: number, minOrderAmount: number} | null>(null);
+  const [promoError, setPromoError] = React.useState<string | null>(null);
+  const [showErrorModal, setShowErrorModal] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string>("");
 
   const categories = React.useMemo(() => {
     const uniqueCategories = Array.from(
@@ -132,8 +136,121 @@ export default function TaoDonHangPage() {
     });
   };
 
+  // Parse error message to user-friendly format
+  const parseErrorMessage = (error: string): string => {
+    // Mã khuyến mãi errors
+    if (error.includes('Promotion code') && error.includes('not found')) {
+      return 'Mã khuyến mãi không tồn tại hoặc đã hết hạn';
+    }
+    if (error.includes('Promotion') && error.includes('out of stock')) {
+      return 'Mã khuyến mãi đã hết lượt sử dụng';
+    }
+    if (error.includes('minimum order amount')) {
+      return 'Đơn hàng chưa đủ điều kiện áp dụng mã khuyến mãi';
+    }
+    if (error.includes('Promotion') && error.includes('expired')) {
+      return 'Mã khuyến mãi đã hết hạn sử dụng';
+    }
+    
+    // Session errors
+    if (error.includes('Session') && error.includes('not found')) {
+      return 'Phiên làm việc đã hết hạn. Vui lòng quét lại mã QR';
+    }
+    if (error.includes('Table') && error.includes('not available')) {
+      return 'Bàn hiện không khả dụng. Vui lòng liên hệ nhân viên';
+    }
+    
+    // Product errors
+    if (error.includes('Product') && error.includes('not found')) {
+      return 'Một số món ăn không còn trong thực đơn';
+    }
+    if (error.includes('out of stock')) {
+      return 'Một số món ăn đã hết. Vui lòng chọn món khác';
+    }
+    
+    // Validation errors
+    if (error.includes('required') || error.includes('empty')) {
+      return 'Vui lòng điền đầy đủ thông tin đơn hàng';
+    }
+    
+    // Network/Server errors
+    if (error.includes('network') || error.includes('Network')) {
+      return 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại';
+    }
+    if (error.includes('500') || error.includes('Internal Server Error')) {
+      return 'Lỗi hệ thống. Vui lòng thử lại sau ít phút';
+    }
+    if (error.includes('timeout')) {
+      return 'Yêu cầu quá lâu. Vui lòng thử lại';
+    }
+    
+    // Default user-friendly message
+    if (error.includes('API Error') || error.includes('error')) {
+      return 'Không thể tạo đơn hàng. Vui lòng thử lại hoặc liên hệ nhân viên';
+    }
+    
+    return error || 'Có lỗi xảy ra. Vui lòng thử lại';
+  };
+
   const calculateTotal = () => {
     return orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+  };
+
+  // Calculate discount amount
+  const calculateDiscount = () => {
+    if (!appliedPromotion) return 0;
+    const total = calculateTotal();
+    return Math.floor((total * appliedPromotion.discountPercentage) / 100);
+  };
+
+  // Calculate final total after discount
+  const calculateFinalTotal = () => {
+    return calculateTotal() - calculateDiscount();
+  };
+
+  // Check and apply promotion code
+  const checkPromotionCode = async () => {
+    if (!promotionCode.trim()) {
+      setAppliedPromotion(null);
+      setPromoError(null);
+      return;
+    }
+
+    try {
+      const response = await fetch('https://api.yenhafood.site/api/promotions/active');
+      if (response.ok) {
+        const promotions = await response.json();
+        const promo = promotions.find((p: {code: string}) => p.code === promotionCode.trim());
+        
+        if (!promo) {
+          setPromoError('Mã khuyến mãi không tồn tại');
+          setAppliedPromotion(null);
+          return;
+        }
+
+        const total = calculateTotal();
+        if (total < promo.minOrderAmount) {
+          setPromoError(`Đơn hàng tối thiểu ${promo.minOrderAmount.toLocaleString("vi-VN")}đ`);
+          setAppliedPromotion(null);
+          return;
+        }
+
+        if (promo.remainingCount <= 0) {
+          setPromoError('Mã khuyến mãi đã hết lượt sử dụng');
+          setAppliedPromotion(null);
+          return;
+        }
+
+        setAppliedPromotion({
+          discountPercentage: promo.discountPercentage,
+          minOrderAmount: promo.minOrderAmount
+        });
+        setPromoError(null);
+      }
+    } catch (error) {
+      console.error('Error checking promotion:', error);
+      setPromoError('Không thể kiểm tra mã khuyến mãi');
+    }
   };
 
   const getProductQuantity = (productId: number) => {
@@ -147,13 +264,14 @@ export default function TaoDonHangPage() {
 
   const handleFinalConfirm = async () => {
     setIsSubmitting(true);
-    setSubmitError(null);
 
     try {
       const session = getTableSession();
       
       if (!session) {
-        setSubmitError('Không tìm thấy thông tin phiên. Vui lòng quét mã QR lại.');
+        setErrorMessage('Phiên làm việc đã hết hạn. Vui lòng quét lại mã QR để tiếp tục.');
+        setShowErrorModal(true);
+        setShowConfirmModal(false);
         setIsSubmitting(false);
         return;
       }
@@ -188,7 +306,10 @@ export default function TaoDonHangPage() {
       const result = await apiService.createOrder(orderData);
 
       if (result.error) {
-        setSubmitError(result.error);
+        const friendlyError = parseErrorMessage(result.error);
+        setErrorMessage(friendlyError);
+        setShowErrorModal(true);
+        setShowConfirmModal(false);
         setIsSubmitting(false);
         return;
       }
@@ -197,10 +318,15 @@ export default function TaoDonHangPage() {
       setShowConfirmModal(false);
       setOrderItems([]);
       setPromotionCode("");
+      setAppliedPromotion(null);
+      setPromoError(null);
       setIsSubmitting(false);
     } catch (error) {
       console.error('Error creating order:', error);
-      setSubmitError('Có lỗi xảy ra khi tạo đơn hàng. Vui lòng thử lại.');
+      const friendlyError = parseErrorMessage(error instanceof Error ? error.message : 'Unknown error');
+      setErrorMessage(friendlyError);
+      setShowErrorModal(true);
+      setShowConfirmModal(false);
       setIsSubmitting(false);
     }
   };
@@ -457,20 +583,60 @@ export default function TaoDonHangPage() {
                 <Tag className="h-4 w-4 mr-2" />
                 Mã giảm giá
               </h3>
-              <Input
-                value={promotionCode}
-                onChange={(e) => setPromotionCode(e.target.value.toUpperCase())}
-                placeholder="Nhập mã giảm giá (nếu có)"
-                className="text-sm"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={promotionCode}
+                  onChange={(e) => {
+                    setPromotionCode(e.target.value.toUpperCase());
+                    setPromoError(null);
+                    setAppliedPromotion(null);
+                  }}
+                  placeholder="Nhập mã giảm giá"
+                  className="text-sm"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={checkPromotionCode}
+                  disabled={!promotionCode.trim()}
+                >
+                  Áp dụng
+                </Button>
+              </div>
+              {promoError && (
+                <p className="text-xs text-red-600 mt-1">{promoError}</p>
+              )}
+              {appliedPromotion && (
+                <p className="text-xs text-green-600 mt-1">
+                  ✓ Giảm {appliedPromotion.discountPercentage}% cho đơn hàng
+                </p>
+              )}
             </div>
             
             <div className="border-t pt-3 mt-4">
-              <div className="flex justify-between items-center mb-4">
-                <span className="text-lg font-bold">Tổng cộng:</span>
-                <span className="text-xl font-bold text-green-600">
-                  {formatPrice(calculateTotal())}
-                </span>
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-600">Tạm tính:</span>
+                  <span className="font-medium">
+                    {formatPrice(calculateTotal())}
+                  </span>
+                </div>
+                
+                {appliedPromotion && (
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-orange-600">Giảm giá ({appliedPromotion.discountPercentage}%):</span>
+                    <span className="font-medium text-orange-600">
+                      -{formatPrice(calculateDiscount())}
+                    </span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <span className="text-lg font-bold">Tổng cộng:</span>
+                  <span className="text-xl font-bold text-green-600">
+                    {formatPrice(calculateFinalTotal())}
+                  </span>
+                </div>
               </div>
               
               <div className="text-sm text-gray-600 mb-4">
@@ -480,23 +646,14 @@ export default function TaoDonHangPage() {
             </div>
           </div>
 
-          {/* Error Display */}
-          {submitError && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-              <div className="flex items-center">
-                <AlertCircle className="h-4 w-4 text-red-600 mr-2" />
-                <p className="text-sm text-red-700">{submitError}</p>
-              </div>
-            </div>
-          )}
-
           <DialogFooter>
             <Button 
               variant="outline" 
               onClick={() => {
                 setShowConfirmModal(false);
-                setSubmitError(null);
                 setPromotionCode("");
+                setAppliedPromotion(null);
+                setPromoError(null);
               }}
               disabled={isSubmitting}
             >
@@ -522,6 +679,50 @@ export default function TaoDonHangPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Error Modal */}
+      <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-red-600">
+              <XCircle className="h-6 w-6 mr-2" />
+              Không thể tạo đơn hàng
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-6">
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
+                <XCircle className="h-10 w-10 text-red-600" />
+              </div>
+            </div>
+            
+            <div className="text-center space-y-4">
+              <p className="text-gray-800 font-medium text-lg">
+                {errorMessage}
+              </p>
+              <p className="text-sm text-gray-600">
+                Nếu vấn đề vẫn tiếp diễn, vui lòng liên hệ nhân viên để được hỗ trợ.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button 
+              className="w-full bg-blue-600 hover:bg-blue-700"
+              onClick={() => {
+                setShowErrorModal(false);
+                setErrorMessage("");
+              }}
+            >
+              Đã hiểu
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Promotion Floating Button */}
+      <PromotionFloatingButton />
     </div>
   );
 }

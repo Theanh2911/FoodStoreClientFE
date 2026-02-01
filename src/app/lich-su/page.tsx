@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { History, Clock, ShoppingBag, User, Lock, Phone, Eye, EyeOff, Loader2, Star, Image as ImageIcon, X } from "lucide-react";
 import { apiService, UserOrder, formatPrice } from "@/lib/api";
 import { clearAuthState, getUserSession, setUserSession } from "@/lib/auth";
+import { PromotionFloatingButton } from "@/components/promotion-floating-button";
 
 interface User {
   userId: number;
@@ -964,6 +965,9 @@ export default function LichSuPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Promotion Floating Button */}
+      <PromotionFloatingButton />
     </div>
   );
 }

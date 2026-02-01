@@ -9,6 +9,7 @@ import { apiService, formatPrice, Product } from "@/lib/api";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
 import { AIFoodAssistant } from "@/components/ai-food-assistant";
+import { PromotionFloatingButton } from "@/components/promotion-floating-button";
 
 export function Dashboard() {
   const [products, setProducts] = React.useState<Product[]>([]);
@@ -127,6 +128,9 @@ export function Dashboard() {
           </div>
         )}
       </main>
+
+      {/* Promotion Floating Button */}
+      <PromotionFloatingButton />
     </div>
   );
 }

@@ -64,7 +64,7 @@ export function SessionInfo() {
         Session: {session.sessionId.substring(0, 8)}...
       </div>
       <div style={{ fontSize: '12px', color: '#666', marginBottom: '12px' }}>
-        ⏱️ Còn lại: {formatTime(timeRemaining)}
+            Còn lại: {formatTime(timeRemaining)}
       </div>
       <button
         onClick={handleClearSession}

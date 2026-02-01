@@ -9,6 +9,7 @@ import { apiService, formatPrice, CATEGORY_IDS, Product } from "@/lib/api";
 import { ProductImage } from "@/components/product-image";
 import { useRouter } from "next/navigation";
 import { AIFoodAssistant } from "@/components/ai-food-assistant";
+import { PromotionFloatingButton } from "@/components/promotion-floating-button";
 
 export default function DoUongPage() {
   const [drinkItems, setDrinkItems] = React.useState<Product[]>([]);
@@ -135,6 +136,8 @@ export default function DoUongPage() {
         )}
       </main>
 
+      {/* Promotion Floating Button */}
+      <PromotionFloatingButton />
     </div>
   );
 }
