@@ -5,10 +5,11 @@ import { DashboardNav } from "@/components/dashboard-nav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, CreditCard, QrCode, Building, User, Hash, CheckCircle, Loader2, PartyPopper } from "lucide-react";
+import { Copy, CreditCard, QrCode, Building, User, Hash, CheckCircle, Loader2, PartyPopper, Tag } from "lucide-react";
 import { apiService, BankAccount, UserOrder, PaymentEvent } from "@/lib/api";
 import { getTableSession } from "@/lib/session";
 import { getCachedUnpaidOrderIds, removeCachedUnpaidOrderId } from "@/lib/unpaid-orders";
+import { PromotionFloatingButton } from "@/components/promotion-floating-button";
 
 export default function ThanhToanPage() {
   const [copiedField, setCopiedField] = React.useState<string | null>(null);
@@ -30,7 +31,6 @@ export default function ThanhToanPage() {
         const response = await apiService.getActiveBankAccount();
 
         if (response.error) {
-          console.error('API Error:', response.error);
           setError('Không thể tải thông tin tài khoản ngân hàng');
           return;
         }
@@ -47,7 +47,6 @@ export default function ThanhToanPage() {
 
         // Check if data exists and has required fields
         if (!bankData || !bankData.bankName) {
-          console.error('Invalid data structure:', bankData);
           setError('Dữ liệu không hợp lệ');
           return;
         }
@@ -56,11 +55,9 @@ export default function ThanhToanPage() {
         if (bankData.status === 'ACTIVE') {
           setBankAccount(bankData);
         } else {
-          console.warn('Bank account is not active:', bankData.status);
           setError('Không có tài khoản ngân hàng hoạt động');
         }
       } catch (err) {
-        console.error('Error fetching bank account:', err);
         setError('Có lỗi xảy ra khi tải thông tin');
       } finally {
         setIsLoading(false);
@@ -110,7 +107,6 @@ export default function ThanhToanPage() {
 
         setUnpaidOrders(unpaidOnly);
       } catch (err) {
-        console.error('Error fetching unpaid orders:', err);
         setError('Có lỗi xảy ra khi tải danh sách đơn hàng');
       }
     };
@@ -165,7 +161,7 @@ export default function ThanhToanPage() {
           }
         },
         (error) => {
-          console.error('Order status SSE error:', error);
+          // SSE error occurred
         }
       );
 
@@ -177,6 +173,7 @@ export default function ThanhToanPage() {
       console.log('Cleaning up order status SSE listeners');
       cleanupFunctions.forEach(cleanup => cleanup());
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unpaidOrders.length, sessionId]);
 
   // Listen to payment events via SSE when payment modal is open
@@ -210,7 +207,7 @@ export default function ThanhToanPage() {
         }
       },
       (error) => {
-        console.error('Payment SSE error:', error);
+        // SSE error occurred
       }
     );
 
@@ -226,7 +223,7 @@ export default function ThanhToanPage() {
       await navigator.clipboard.writeText(text);
       setCopiedField(fieldName);
       setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
+    } catch {
       // Failed to copy
     }
   };
@@ -282,9 +279,9 @@ export default function ThanhToanPage() {
     setSelectedOrder(null);
   };
 
-  const getOrderAmountInt = (totalAmount: number) => {
-    // totalAmount is always like xxxxx.x → drop decimal part
-    return Math.trunc(totalAmount);
+  const getOrderAmountInt = (amount: number) => {
+    // amount is always like xxxxx.x → drop decimal part
+    return Math.trunc(amount);
   };
 
   const isPaymentButtonDisabled = (order: UserOrder): boolean => {
@@ -303,7 +300,7 @@ export default function ThanhToanPage() {
   };
 
   const buildVietQrImageUrl = (order: UserOrder, bank: BankAccount) => {
-    const amount = getOrderAmountInt(order.totalAmount);
+    const amount = getOrderAmountInt(order.amount);
     const addInfo = `YHF${order.orderId}`;
     return `https://img.vietqr.io/image/${bank.bankName}-${bank.accountNumber}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}`;
   };
@@ -372,7 +369,7 @@ export default function ThanhToanPage() {
 
                         <div className="flex items-center justify-between pt-3 border-t">
                           <div className="font-bold">
-                            Tổng: {order.totalAmount.toLocaleString("vi-VN")} VNĐ
+                            Tổng: {order.amount.toLocaleString("vi-VN")} VNĐ
                           </div>
                           <Button
                             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -490,6 +487,7 @@ export default function ThanhToanPage() {
                 {bankAccount.qrCodeImageUrl ? (
                   <div className="flex justify-center">
                     <div className="p-4 bg-white rounded-lg shadow-sm border">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={bankAccount.qrCodeImageUrl}
                         alt="QR Code thanh toán"
@@ -534,6 +532,7 @@ export default function ThanhToanPage() {
               <div className="space-y-4">
                 <div className="flex justify-center">
                   <div className="p-4 bg-white rounded-lg shadow-sm border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={buildVietQrImageUrl(selectedOrder, bankAccount)}
                       alt="VietQR"
@@ -546,7 +545,7 @@ export default function ThanhToanPage() {
                   <div className="flex justify-between">
                     <span>Số tiền:</span>
                     <span className="font-semibold">
-                      {getOrderAmountInt(selectedOrder.totalAmount).toLocaleString("vi-VN")} VNĐ
+                      {getOrderAmountInt(selectedOrder.amount).toLocaleString("vi-VN")} VNĐ
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -647,6 +646,9 @@ export default function ThanhToanPage() {
         </Dialog>
 
       </main>
+
+      {/* Promotion Floating Button */}
+      <PromotionFloatingButton />
     </div>
   );
 }

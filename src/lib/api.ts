@@ -11,64 +11,20 @@ export interface Product {
   };
 }
 
-export interface OrderItem {
-  productId: number;
-  name: string;
-  quantity: number;
-  note?: string;
-}
-
-// Legacy - Keep for backward compatibility
-export interface CreateOrderRequest {
-  name: string;
-  tableNumber: number;
-  sessionId: string;
-  userId?: string;
-  total: number;
-  items: OrderItem[];
-}
-
-// New API structures
 export interface OrderItemRequest {
   productId: number;
   quantity: number;
   note?: string;
 }
 
-// Unified order request structure
 export interface UnifiedOrderRequest {
   sessionId: string;
   tableNumber: number;
-  name?: string; // Tên khách (guest hoặc user đã đăng nhập)
-  userId?: number; // Id khách hàng (khi đã đăng nhập)
-  total: number;
-  items: OrderItemRequest[];
-}
-
-// Legacy - Keep for backward compatibility
-export interface AuthenticatedOrderRequest {
-  sessionId: string;
-  tableNumber: number;
+  name?: string;
   userId?: number;
+  promotionCode?: string;
   total: number;
   items: OrderItemRequest[];
-}
-
-export interface GuestOrderRequest {
-  name: string;
-  sessionId: string;
-  total: number;
-  items: OrderItemRequest[];
-}
-
-export interface Order {
-  orderId: number;
-  name: string;
-  tableNumber: number;
-  total: number;
-  items: OrderItem[];
-  status?: string;
-  createdAt?: string;
 }
 
 export interface ApiResponse<T> {
@@ -110,6 +66,7 @@ export interface UserOrder {
   orderId: number;
   customerName: string;
   tableNumber: number;
+  amount: number;
   totalAmount: number;
   orderTime: string;
   status: string;
@@ -147,6 +104,13 @@ export interface RatingResponse {
   orderDetails: UserOrder;
 }
 
+export interface AISuggestionResponse {
+  main_dish: string;
+  side_dish: string;
+  drink: string;
+  reason: string;
+}
+
 class ApiService {
   private async fetchWithErrorHandling<T>(url: string, options?: RequestInit): Promise<ApiResponse<T>> {
     try {
@@ -181,40 +145,6 @@ class ApiService {
     return this.fetchWithErrorHandling<Product[]>(`${API_BASE_URL}/menu/products/category/${categoryId}`);
   }
 
-  async addProduct(productData: {
-    name: string;
-    price: number;
-    categoryId: number;
-    image?: string;
-  }): Promise<ApiResponse<Product>> {
-
-    return this.fetchWithErrorHandling<Product>(`${API_BASE_URL}/menu/products/create`, {
-      method: 'POST',
-      body: JSON.stringify(productData),
-    });
-  }
-
-  async updateProduct(productId: number, productData: {
-    productId: number;
-    name: string;
-    price: number;
-    image: string;
-    categoryId: number;
-  }): Promise<ApiResponse<Product>> {
-
-    return this.fetchWithErrorHandling<Product>(`${API_BASE_URL}/menu/products/update/${productId}`, {
-      method: 'PUT',
-      body: JSON.stringify(productData),
-    });
-  }
-
-  async deleteProduct(productId: number): Promise<ApiResponse<void>> {
-    return this.fetchWithErrorHandling<void>(`${API_BASE_URL}/menu/products/delete/${productId}`, {
-      method: 'DELETE',
-    });
-  }
-
-  // Unified order creation - Backend phân biệt qua Authorization header
   async createOrder(orderData: UnifiedOrderRequest): Promise<ApiResponse<UserOrder>> {
     const token = localStorage.getItem('accessToken');
     const headers: HeadersInit = {
@@ -233,42 +163,8 @@ class ApiService {
     });
   }
 
-  // Legacy methods - Keep for backward compatibility
-  async createAuthenticatedOrder(orderData: AuthenticatedOrderRequest): Promise<ApiResponse<Order>> {
-    const token = localStorage.getItem('accessToken');
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create`, {
-      method: 'POST',
-      body: JSON.stringify(orderData),
-      headers,
-    });
-  }
-
-  async createGuestOrder(orderData: GuestOrderRequest): Promise<ApiResponse<Order>> {
-    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/create`, {
-      method: 'POST',
-      body: JSON.stringify(orderData),
-    });
-  }
-
-  async getOrder(orderId: number): Promise<ApiResponse<Order>> {
-    return this.fetchWithErrorHandling<Order>(`${API_BASE_URL}/orders/${orderId}`);
-  }
-
-  // Get order detail with full information (UserOrder format)
   async getOrderDetail(orderId: number): Promise<ApiResponse<UserOrder>> {
     return this.fetchWithErrorHandling<UserOrder>(`${API_BASE_URL}/orders/${orderId}`);
-  }
-
-  async getOrders(): Promise<ApiResponse<Order[]>> {
-    return this.fetchWithErrorHandling<Order[]>(`${API_BASE_URL}/orders`);
   }
 
   async register(userData: AuthRegisterRequest): Promise<ApiResponse<AuthResponse>> {
@@ -304,25 +200,10 @@ class ApiService {
     return this.fetchWithErrorHandling<BankAccount>(`${API_BASE_URL}/banks/active`);
   }
 
-  async logout(): Promise<ApiResponse<{ message: string }>> {
-    const token = localStorage.getItem('accessToken');
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    };
-
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    return this.fetchWithErrorHandling<{ message: string }>(`${API_BASE_URL}/auth/logout`, {
-      method: 'POST',
-      headers,
-    });
-  }
 
   async updatePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
     const token = localStorage.getItem('accessToken');
-    
+
     if (!token) {
       return {
         data: {} as { message: string },
@@ -342,10 +223,17 @@ class ApiService {
     });
   }
 
+  async getAISuggestion(userDemand: string): Promise<ApiResponse<AISuggestionResponse>> {
+    return this.fetchWithErrorHandling<AISuggestionResponse>(`${API_BASE_URL}/ai/suggestion`, {
+      method: 'POST',
+      body: JSON.stringify({ userDemand }),
+    });
+  }
+
   // Create rating for an order
   async createRating(orderId: number, ratingData: FormData): Promise<ApiResponse<RatingResponse>> {
     const token = localStorage.getItem('accessToken');
-    
+
     if (!token) {
       return {
         data: {} as RatingResponse,
@@ -365,7 +253,6 @@ class ApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        console.error('❌ Backend error response:', errorData);
         throw new Error(errorData.message || `API Error: ${response.status}`);
       }
 
@@ -374,7 +261,6 @@ class ApiService {
       // Extract the data field
       return { data: responseData.data || responseData };
     } catch (error) {
-      console.error('💥 Rating creation failed:', error);
       return {
         data: {} as RatingResponse,
         error: error instanceof Error ? error.message : 'Không thể gửi đánh giá'
@@ -415,21 +301,12 @@ class ApiService {
           onEvent(data);
         }
       } catch (error) {
-        console.error('Error parsing payment event:', error);
         if (onError) {
           onError(error instanceof Error ? error : new Error('Parse error'));
         }
       }
     });
 
-    eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
-      if (onError) {
-        onError(new Error('SSE connection failed'));
-      }
-    };
-
-    // Return cleanup function
     return () => {
       console.log('Closing SSE connection for order:', orderId);
       eventSource.close();
@@ -466,21 +343,12 @@ class ApiService {
         // Call callback với dữ liệu order mới
         onStatusChange(orderData);
       } catch (error) {
-        console.error('Error parsing order status event:', error);
         if (onError) {
           onError(error instanceof Error ? error : new Error('Parse error'));
         }
       }
     });
 
-    eventSource.onerror = (error) => {
-      console.error('Order SSE connection error:', error);
-      if (onError) {
-        onError(new Error('Order SSE connection failed'));
-      }
-    };
-
-    // Return cleanup function
     return () => {
       console.log('Closing order SSE connection for order:', orderId);
       eventSource.close();

@@ -6,15 +6,14 @@ const child = spawn('npx', ['next', 'dev', '--hostname', '0.0.0.0', '--port', '3
 });
 
 child.on('error', (error) => {
-  console.error('❌ Error starting server:', error);
+  // Server error
 });
 
 child.on('exit', (code) => {
-  console.log(`🛑 Server stopped with code: ${code}`);
+  // Server stopped
 });
 
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down server...');
   child.kill('SIGTERM');
   process.exit(0);
 });
