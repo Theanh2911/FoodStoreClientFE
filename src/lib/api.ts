@@ -385,7 +385,6 @@ class ApiService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ message: response.statusText }));
-        console.error('❌ Backend error response:', errorData);
         throw new Error(errorData.message || `API Error: ${response.status}`);
       }
 
@@ -394,7 +393,6 @@ class ApiService {
       // Extract the data field
       return { data: responseData.data || responseData };
     } catch (error) {
-      console.error('💥 Rating creation failed:', error);
       return {
         data: {} as RatingResponse,
         error: error instanceof Error ? error.message : 'Không thể gửi đánh giá'
@@ -435,7 +433,6 @@ class ApiService {
           onEvent(data);
         }
       } catch (error) {
-        console.error('Error parsing payment event:', error);
         if (onError) {
           onError(error instanceof Error ? error : new Error('Parse error'));
         }
@@ -443,7 +440,6 @@ class ApiService {
     });
 
     eventSource.onerror = (error) => {
-      console.error('SSE connection error:', error);
       if (onError) {
         onError(new Error('SSE connection failed'));
       }
@@ -486,7 +482,6 @@ class ApiService {
         // Call callback với dữ liệu order mới
         onStatusChange(orderData);
       } catch (error) {
-        console.error('Error parsing order status event:', error);
         if (onError) {
           onError(error instanceof Error ? error : new Error('Parse error'));
         }
@@ -494,7 +489,6 @@ class ApiService {
     });
 
     eventSource.onerror = (error) => {
-      console.error('Order SSE connection error:', error);
       if (onError) {
         onError(new Error('Order SSE connection failed'));
       }

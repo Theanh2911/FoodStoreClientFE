@@ -47,18 +47,18 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
     // Case-insensitive partial match
     const partialMatch = allProducts.find(
       p => p.name.toLowerCase().includes(dishName.toLowerCase()) ||
-           dishName.toLowerCase().includes(p.name.toLowerCase())
+        dishName.toLowerCase().includes(p.name.toLowerCase())
     );
     return partialMatch || null;
   };
 
   const getFallbackDishes = (): SuggestedDish[] => {
     const fallbackDishes: SuggestedDish[] = [];
-    
+
     // Get first product from each category
     const categories = ['Đồ ăn', 'Đồ ăn thêm', 'Đồ uống'];
     const types: ('main_dish' | 'side_dish' | 'drink')[] = ['main_dish', 'side_dish', 'drink'];
-    
+
     categories.forEach((categoryName, index) => {
       const product = allProducts.find(p => p.category.name === categoryName);
       if (product) {
@@ -84,14 +84,13 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
 
       if (response.error) {
         // Fallback: get first dish from each category
-        console.error('AI API error, using fallback:', response.error);
         const fallback = getFallbackDishes();
         setSuggestedDishes(fallback);
         setReason("Đây là những món phổ biến nhất của chúng tôi!");
       } else {
         // Match dishes from API response
         const dishes: SuggestedDish[] = [];
-        
+
         const mainDish = findProductByName(response.data.main_dish);
         if (mainDish) {
           dishes.push({ product: mainDish, type: 'main_dish' });
@@ -118,7 +117,6 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
         }
       }
     } catch (error) {
-      console.error('Error getting AI suggestion:', error);
       // Fallback on any error
       const fallback = getFallbackDishes();
       setSuggestedDishes(fallback);
@@ -167,7 +165,7 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-50 transition-opacity"
             onClick={handleClose}
           />

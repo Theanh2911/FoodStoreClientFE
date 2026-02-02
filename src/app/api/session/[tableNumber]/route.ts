@@ -25,7 +25,6 @@ export async function POST(
     return NextResponse.json(data);
 
   } catch (error) {
-    console.error('Error calling backend:', error);
     return NextResponse.json(
       { error: 'Failed to create session' },
       { status: 500 }

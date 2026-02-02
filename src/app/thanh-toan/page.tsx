@@ -31,7 +31,6 @@ export default function ThanhToanPage() {
         const response = await apiService.getActiveBankAccount();
 
         if (response.error) {
-          console.error('API Error:', response.error);
           setError('Không thể tải thông tin tài khoản ngân hàng');
           return;
         }
@@ -48,7 +47,6 @@ export default function ThanhToanPage() {
 
         // Check if data exists and has required fields
         if (!bankData || !bankData.bankName) {
-          console.error('Invalid data structure:', bankData);
           setError('Dữ liệu không hợp lệ');
           return;
         }
@@ -57,11 +55,9 @@ export default function ThanhToanPage() {
         if (bankData.status === 'ACTIVE') {
           setBankAccount(bankData);
         } else {
-          console.warn('Bank account is not active:', bankData.status);
           setError('Không có tài khoản ngân hàng hoạt động');
         }
       } catch (err) {
-        console.error('Error fetching bank account:', err);
         setError('Có lỗi xảy ra khi tải thông tin');
       } finally {
         setIsLoading(false);
@@ -111,7 +107,6 @@ export default function ThanhToanPage() {
 
         setUnpaidOrders(unpaidOnly);
       } catch (err) {
-        console.error('Error fetching unpaid orders:', err);
         setError('Có lỗi xảy ra khi tải danh sách đơn hàng');
       }
     };
@@ -166,7 +161,7 @@ export default function ThanhToanPage() {
           }
         },
         (error) => {
-          console.error('Order status SSE error:', error);
+          // SSE error occurred
         }
       );
 
@@ -212,7 +207,7 @@ export default function ThanhToanPage() {
         }
       },
       (error) => {
-        console.error('Payment SSE error:', error);
+        // SSE error occurred
       }
     );
 

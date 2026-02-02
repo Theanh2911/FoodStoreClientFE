@@ -51,7 +51,7 @@ export default function LichSuPage() {
   const [showOldPassword, setShowOldPassword] = React.useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = React.useState(false);
-  const [updatePasswordMessage, setUpdatePasswordMessage] = React.useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [updatePasswordMessage, setUpdatePasswordMessage] = React.useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // Check authentication on component mount
   React.useEffect(() => {
@@ -69,7 +69,7 @@ export default function LichSuPage() {
       setIsLoggedIn(true);
       fetchUserOrders(session.userId);
     };
-    
+
     checkAuth();
   }, []);
 
@@ -79,13 +79,11 @@ export default function LichSuPage() {
       setIsLoading(true);
       const response = await apiService.getUserOrders(userId);
       if (response.error) {
-        console.error('Error fetching orders:', response.error);
         setOrders([]);
       } else {
         setOrders(response.data);
       }
     } catch (error) {
-      console.error('Error fetching orders:', error);
       setOrders([]);
     } finally {
       setIsLoading(false);
@@ -104,7 +102,7 @@ export default function LichSuPage() {
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
       if (isLogin) {
         // Handle login
@@ -113,19 +111,19 @@ export default function LichSuPage() {
             phoneNumber: formData.phoneNumber,
             password: formData.password
           });
-          
+
           if (response.error) {
             alert('Đăng nhập thất bại: ' + response.error);
             return;
           }
-          
+
           if (response.data.message === "Login successful") {
             const userData = {
               userId: response.data.userId,
               name: response.data.name,
               phoneNumber: response.data.phoneNumber
             };
-            
+
             // Save tokens to localStorage
             if (response.data.token) {
               localStorage.setItem('accessToken', response.data.token);
@@ -133,13 +131,13 @@ export default function LichSuPage() {
             if (response.data.refreshToken) {
               localStorage.setItem('refreshToken', response.data.refreshToken);
             }
-            
+
             setUserSession(userData);
             setUser(userData);
             setIsLoggedIn(true);
             setShowAuthModal(false);
             setFormData({ phoneNumber: "", password: "", confirmPassword: "", name: "" });
-            
+
             // Auto fetch orders after successful login
             await fetchUserOrders(userData.userId);
           } else {
@@ -153,18 +151,18 @@ export default function LichSuPage() {
             alert("Mật khẩu không khớp!");
             return;
           }
-          
+
           const response = await apiService.register({
             name: formData.name,
             password: formData.password,
             phoneNumber: formData.phoneNumber
           });
-          
+
           if (response.error) {
             alert('Đăng ký thất bại: ' + response.error);
             return;
           }
-          
+
           if (response.data.message === "Registration successful") {
             alert('Đăng ký thành công! Vui lòng đăng nhập.');
             setIsLogin(true);
@@ -175,7 +173,6 @@ export default function LichSuPage() {
         }
       }
     } catch (error) {
-      console.error('Auth error:', error);
       alert('Có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
@@ -303,7 +300,7 @@ export default function LichSuPage() {
   const handleRemoveImage = (index: number) => {
     // Revoke URL to free memory
     URL.revokeObjectURL(imagePreviewUrls[index]);
-    
+
     setRatingImages(prev => prev.filter((_, i) => i !== index));
     setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
@@ -317,7 +314,7 @@ export default function LichSuPage() {
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const text = e.target.value;
     const wordCount = getWordCount(text);
-    
+
     if (wordCount <= 50) {
       setComment(text);
     }
@@ -326,7 +323,7 @@ export default function LichSuPage() {
   // Submit rating
   const handleSubmitRating = async () => {
     if (!selectedOrderForRating) return;
-    
+
     if (rating === 0) {
       alert('Vui lòng chọn số sao đánh giá');
       return;
@@ -337,7 +334,7 @@ export default function LichSuPage() {
     try {
       const formData = new FormData();
       formData.append('rating', rating.toString());
-      
+
       if (comment.trim()) {
         formData.append('comment', comment.trim());
       }
@@ -349,17 +346,16 @@ export default function LichSuPage() {
       const response = await apiService.createRating(selectedOrderForRating.orderId, formData);
 
       if (response.error) {
-        console.error('Rating error:', response.error);
         alert('Lỗi: ' + response.error);
         return;
       }
 
       alert('Đánh giá thành công!');
-      
+
       // Update order list to mark as rated
-      setOrders(prevOrders => 
-        prevOrders.map(order => 
-          order.orderId === selectedOrderForRating.orderId 
+      setOrders(prevOrders =>
+        prevOrders.map(order =>
+          order.orderId === selectedOrderForRating.orderId
             ? { ...order, isRated: true }
             : order
         )
@@ -367,7 +363,6 @@ export default function LichSuPage() {
 
       handleCloseRatingModal();
     } catch (error) {
-      console.error('Error submitting rating:', error);
       alert('Có lỗi xảy ra khi gửi đánh giá');
     } finally {
       setIsSubmittingRating(false);
@@ -377,10 +372,10 @@ export default function LichSuPage() {
   // Format date
   const formatDate = (dateString: string): string => {
     if (!dateString) return 'Chưa có thông tin';
-    
+
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return 'Ngày không hợp lệ';
-    
+
     return date.toLocaleString('vi-VN', {
       year: 'numeric',
       month: '2-digit',
@@ -393,7 +388,7 @@ export default function LichSuPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNav />
-      
+
       <main className="container mx-auto px-3 sm:px-4 lg:px-6 pt-8 sm:pt-12 lg:pt-16 pb-3 sm:pb-4 lg:pb-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-16 lg:mb-20">
@@ -408,14 +403,14 @@ export default function LichSuPage() {
           {isLoggedIn && user && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-3">
               <div className="text-sm text-gray-600">
-                Xin chào, <button 
+                Xin chào, <button
                   onClick={handleOpenUserProfile}
                   className="font-bold text-gray-900 underline hover:text-gray-700 cursor-pointer"
                 >
                   {user.name}
                 </button>
               </div>
-              <Button 
+              <Button
                 variant="outline"
                 onClick={handleLogout}
                 className="self-start sm:self-center"
@@ -506,13 +501,12 @@ export default function LichSuPage() {
                       <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                         <div className="flex items-center">
                           <span className="text-sm text-gray-500 mr-3 font-medium">Trạng thái:</span>
-                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            order.status === 'Hoàn thành' || order.status === 'COMPLETED' || order.status === 'PAID'
-                              ? 'bg-green-100 text-green-700 border border-green-200' 
+                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${order.status === 'Hoàn thành' || order.status === 'COMPLETED' || order.status === 'PAID'
+                              ? 'bg-green-100 text-green-700 border border-green-200'
                               : order.status === 'PENDING'
-                              ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-                              : 'bg-gray-100 text-gray-700 border border-gray-200'
-                          }`}>
+                                ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
+                                : 'bg-gray-100 text-gray-700 border border-gray-200'
+                            }`}>
                             {order.status || 'Chưa xác định'}
                           </span>
                         </div>
@@ -559,7 +553,7 @@ export default function LichSuPage() {
               <p className="text-gray-600 mb-8 max-w-md mx-auto">
                 Bạn cần đăng nhập để xem lịch sử đơn hàng và theo dõi các đơn hàng đã đặt
               </p>
-              <Button 
+              <Button
                 onClick={() => setShowAuthModal(true)}
                 size="lg"
                 className="px-8 py-3"
@@ -583,20 +577,20 @@ export default function LichSuPage() {
 
           <form onSubmit={handleAuthSubmit} className="space-y-5">
             {!isLogin && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="name" className="mb-1 block text-sm font-medium">
-                    Họ và tên
-                  </Label>
-                  <Input
-                      id="name"
-                      name="name"
-                      type="text"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="Nhập họ và tên"
-                      required={!isLogin}
-                  />
-                </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="name" className="mb-1 block text-sm font-medium">
+                  Họ và tên
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Nhập họ và tên"
+                  required={!isLogin}
+                />
+              </div>
             )}
 
             <div className="space-y-1.5">
@@ -604,16 +598,16 @@ export default function LichSuPage() {
                 Số điện thoại
               </Label>
               <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"/>
+                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                    id="phoneNumber"
-                    name="phoneNumber"
-                    type="tel"
-                    value={formData.phoneNumber}
-                    onChange={handleInputChange}
-                    placeholder="Nhập số điện thoại"
-                    className="pl-10"
-                    required
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  placeholder="Nhập số điện thoại"
+                  className="pl-10"
+                  required
                 />
               </div>
             </div>
@@ -623,46 +617,46 @@ export default function LichSuPage() {
                 Mật khẩu
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"/>
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Nhập mật khẩu"
-                    className="pl-10 pr-10"
-                    required
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Nhập mật khẩu"
+                  className="pl-10 pr-10"
+                  required
                 />
                 <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4"/> : <Eye className="h-4 w-4"/>}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
 
             {!isLogin && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium">
-                    Xác nhận mật khẩu
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"/>
-                    <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        placeholder="Nhập lại mật khẩu"
-                        className="pl-10"
-                        required={!isLogin}
-                    />
-                  </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmPassword" className="mb-1 block text-sm font-medium">
+                  Xác nhận mật khẩu
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={handleInputChange}
+                    placeholder="Nhập lại mật khẩu"
+                    className="pl-10"
+                    required={!isLogin}
+                  />
                 </div>
+              </div>
             )}
 
             <Button type="submit" className="w-full mt-2" disabled={isLoading}>
@@ -678,9 +672,9 @@ export default function LichSuPage() {
 
             <div className="text-center">
               <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                  className="text-sm text-blue-600 hover:text-blue-800"
+                type="button"
+                onClick={() => setIsLogin(!isLogin)}
+                className="text-sm text-blue-600 hover:text-blue-800"
               >
                 {isLogin ? "Chưa có tài khoản? Đăng ký ngay" : "Đã có tài khoản? Đăng nhập"}
               </button>
@@ -726,7 +720,7 @@ export default function LichSuPage() {
             {/* Update Password Section */}
             <div className="pt-4 border-t border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-3">Đổi mật khẩu</h3>
-              
+
               <div className="space-y-3">
                 {/* Old Password */}
                 <div className="space-y-1.5">
@@ -785,16 +779,14 @@ export default function LichSuPage() {
 
               {/* Message Display */}
               {updatePasswordMessage && (
-                <div className={`mt-3 p-3 rounded-lg ${
-                  updatePasswordMessage.type === 'success' 
-                    ? 'bg-green-50 border border-green-200' 
+                <div className={`mt-3 p-3 rounded-lg ${updatePasswordMessage.type === 'success'
+                    ? 'bg-green-50 border border-green-200'
                     : 'bg-red-50 border border-red-200'
-                }`}>
-                  <p className={`text-sm ${
-                    updatePasswordMessage.type === 'success' 
-                      ? 'text-green-700' 
-                      : 'text-red-700'
                   }`}>
+                  <p className={`text-sm ${updatePasswordMessage.type === 'success'
+                      ? 'text-green-700'
+                      : 'text-red-700'
+                    }`}>
                     {updatePasswordMessage.text}
                   </p>
                 </div>
@@ -857,11 +849,10 @@ export default function LichSuPage() {
                     className="transition-transform hover:scale-110"
                   >
                     <Star
-                      className={`h-10 w-10 ${
-                        star <= (hoverRating || rating)
+                      className={`h-10 w-10 ${star <= (hoverRating || rating)
                           ? 'fill-yellow-400 text-yellow-400'
                           : 'text-gray-300'
-                      }`}
+                        }`}
                     />
                   </button>
                 ))}
@@ -874,9 +865,8 @@ export default function LichSuPage() {
                 <Label htmlFor="comment" className="text-sm font-medium">
                   Nhận xét
                 </Label>
-                <span className={`text-xs ${
-                  getWordCount(comment) > 50 ? 'text-red-500' : 'text-gray-500'
-                }`}>
+                <span className={`text-xs ${getWordCount(comment) > 50 ? 'text-red-500' : 'text-gray-500'
+                  }`}>
                   {getWordCount(comment)}/50 từ
                 </span>
               </div>
@@ -894,7 +884,7 @@ export default function LichSuPage() {
               <Label className="text-sm font-medium">
                 Hình ảnh
               </Label>
-              
+
               {/* Image Previews */}
               {imagePreviewUrls.length > 0 && (
                 <div className="grid grid-cols-3 gap-3 mb-3">

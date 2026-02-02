@@ -23,11 +23,11 @@ interface CartItem extends Product {
 }
 
 // Component to handle AI suggestions from URL params
-function AIOrderLoader({ 
-  products, 
-  onLoadItems 
-}: { 
-  products: Product[]; 
+function AIOrderLoader({
+  products,
+  onLoadItems
+}: {
+  products: Product[];
   onLoadItems: (items: CartItem[]) => void;
 }) {
   const searchParams = useSearchParams();
@@ -40,19 +40,19 @@ function AIOrderLoader({
 
     // Parse product IDs from URL
     const productIds = aiParam.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
-    
+
     if (productIds.length === 0) return;
 
     // Add AI suggested products to order
     const suggestedProducts = products.filter(p => productIds.includes(p.productId));
-    
+
     if (suggestedProducts.length > 0) {
       const newOrderItems: CartItem[] = suggestedProducts.map(product => ({
         ...product,
         quantity: 1,
         note: ""
       }));
-      
+
       onLoadItems(newOrderItems);
     }
   }, [products, searchParams, onLoadItems]);
@@ -69,7 +69,7 @@ export default function TaoDonHangPage() {
   const [showConfirmModal, setShowConfirmModal] = React.useState(false);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [promotionCode, setPromotionCode] = React.useState<string>("");
-  const [appliedPromotion, setAppliedPromotion] = React.useState<{discountPercentage: number, minOrderAmount: number} | null>(null);
+  const [appliedPromotion, setAppliedPromotion] = React.useState<{ discountPercentage: number, minOrderAmount: number } | null>(null);
   const [promoError, setPromoError] = React.useState<string | null>(null);
   const [showErrorModal, setShowErrorModal] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
@@ -92,15 +92,15 @@ export default function TaoDonHangPage() {
     const fetchProducts = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       const result = await apiService.getAllProducts();
-      
+
       if (result.error) {
         setError(result.error);
       } else {
         setProducts(result.data);
       }
-      
+
       setIsLoading(false);
     };
 
@@ -181,7 +181,7 @@ export default function TaoDonHangPage() {
     if (error.includes('API Error') || error.includes('error')) {
       return 'Không thể tạo đơn hàng. Vui lòng thử lại hoặc liên hệ nhân viên';
     }
-    
+
     return error || 'Có lỗi xảy ra. Vui lòng thử lại';
   };
 
@@ -210,8 +210,8 @@ export default function TaoDonHangPage() {
       const response = await fetch('https://api.yenhafood.site/api/promotions/active');
       if (response.ok) {
         const promotions = await response.json();
-        const promo = promotions.find((p: {code: string}) => p.code === promotionCode.trim());
-        
+        const promo = promotions.find((p: { code: string }) => p.code === promotionCode.trim());
+
         if (!promo) {
           setPromoError('Mã khuyến mãi không tồn tại');
           setAppliedPromotion(null);
@@ -238,7 +238,6 @@ export default function TaoDonHangPage() {
         setPromoError(null);
       }
     } catch (error) {
-      console.error('Error checking promotion:', error);
       setPromoError('Không thể kiểm tra mã khuyến mãi');
     }
   };
@@ -257,7 +256,7 @@ export default function TaoDonHangPage() {
 
     try {
       const session = getTableSession();
-      
+
       if (!session) {
         setErrorMessage('Phiên làm việc đã hết hạn. Vui lòng quét lại mã QR để tiếp tục.');
         setShowErrorModal(true);
@@ -312,7 +311,6 @@ export default function TaoDonHangPage() {
       setPromoError(null);
       setIsSubmitting(false);
     } catch (error) {
-      console.error('Error creating order:', error);
       const friendlyError = parseErrorMessage(error instanceof Error ? error.message : 'Unknown error');
       setErrorMessage(friendlyError);
       setShowErrorModal(true);
@@ -324,12 +322,12 @@ export default function TaoDonHangPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNav />
-      
+
       {/* AI Order Loader with Suspense */}
       <Suspense fallback={null}>
         <AIOrderLoader products={products} onLoadItems={handleLoadAIItems} />
       </Suspense>
-      
+
       <main className="container mx-auto p-3 sm:p-4 lg:p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -350,7 +348,7 @@ export default function TaoDonHangPage() {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                
+
                 {/* Category Filters */}
                 <div className="flex flex-wrap gap-2 mt-4">
                   {categories.map((category) => (
@@ -390,9 +388,9 @@ export default function TaoDonHangPage() {
                   <div className="flex items-center justify-center py-8">
                     <AlertCircle className="h-8 w-8 text-red-600" />
                     <span className="ml-2 text-red-600">Lỗi: {error}</span>
-                    <Button 
-                      variant="outline" 
-                      className="ml-4" 
+                    <Button
+                      variant="outline"
+                      className="ml-4"
                       onClick={() => window.location.reload()}
                     >
                       Thử lại
@@ -405,7 +403,7 @@ export default function TaoDonHangPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {filteredProducts.length === 0 ? (
                       <div className="col-span-full text-center py-8 text-gray-500">
-                        {selectedCategory === "all" 
+                        {selectedCategory === "all"
                           ? "Chưa có sản phẩm nào trong thực đơn."
                           : `Không có sản phẩm nào trong danh mục "${selectedCategory}".`
                         }
@@ -495,7 +493,7 @@ export default function TaoDonHangPage() {
                         </div>
                       </div>
                     ))}
-                    
+
                     <div className="pt-3 border-t">
                       <div className="flex justify-between items-center mb-4">
                         <span className="font-bold">Tổng cộng:</span>
@@ -503,8 +501,8 @@ export default function TaoDonHangPage() {
                           {formatPrice(calculateTotal())}
                         </span>
                       </div>
-                      
-                      <Button 
+
+                      <Button
                         className="w-full bg-blue-600 hover:bg-blue-700"
                         onClick={handleConfirmOrder}
                       >
@@ -528,7 +526,7 @@ export default function TaoDonHangPage() {
               Xác nhận đơn hàng
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="py-4">
             <div className="mb-4">
               <h3 className="font-semibold mb-3">Chi tiết đơn hàng:</h3>
@@ -602,7 +600,7 @@ export default function TaoDonHangPage() {
                 </p>
               )}
             </div>
-            
+
             <div className="border-t pt-3 mt-4">
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between items-center text-sm">
@@ -611,7 +609,7 @@ export default function TaoDonHangPage() {
                     {formatPrice(calculateTotal())}
                   </span>
                 </div>
-                
+
                 {appliedPromotion && (
                   <div className="flex justify-between items-center text-sm">
                     <span className="text-orange-600">Giảm giá ({appliedPromotion.discountPercentage}%):</span>
@@ -620,7 +618,7 @@ export default function TaoDonHangPage() {
                     </span>
                   </div>
                 )}
-                
+
                 <div className="flex justify-between items-center pt-2 border-t">
                   <span className="text-lg font-bold">Tổng cộng:</span>
                   <span className="text-xl font-bold text-green-600">
@@ -628,7 +626,7 @@ export default function TaoDonHangPage() {
                   </span>
                 </div>
               </div>
-              
+
               <div className="text-sm text-gray-600 mb-4">
                 <p>Số lượng món: {orderItems.length}</p>
                 <p>Tổng số sản phẩm: {orderItems.reduce((sum, item) => sum + item.quantity, 0)}</p>
@@ -637,8 +635,8 @@ export default function TaoDonHangPage() {
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => {
                 setShowConfirmModal(false);
                 setPromotionCode("");
@@ -649,7 +647,7 @@ export default function TaoDonHangPage() {
             >
               Hủy
             </Button>
-            <Button 
+            <Button
               className="bg-green-600 hover:bg-green-700"
               onClick={handleFinalConfirm}
               disabled={isSubmitting || (promotionCode.trim() !== "" && !appliedPromotion)}
@@ -679,14 +677,14 @@ export default function TaoDonHangPage() {
               Không thể tạo đơn hàng
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="py-6">
             <div className="flex justify-center mb-6">
               <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
                 <XCircle className="h-10 w-10 text-red-600" />
               </div>
             </div>
-            
+
             <div className="text-center space-y-4">
               <p className="text-gray-800 font-medium text-lg">
                 {errorMessage}
@@ -698,7 +696,7 @@ export default function TaoDonHangPage() {
           </div>
 
           <DialogFooter>
-            <Button 
+            <Button
               className="w-full bg-blue-600 hover:bg-blue-700"
               onClick={() => {
                 setShowErrorModal(false);
