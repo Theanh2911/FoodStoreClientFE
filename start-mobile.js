@@ -10,11 +10,10 @@ child.on('error', (error) => {
 });
 
 child.on('exit', (code) => {
-  console.log(`🛑 Server stopped with code: ${code}`);
+  // Server stopped
 });
 
 process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down server...');
   child.kill('SIGTERM');
   process.exit(0);
 });

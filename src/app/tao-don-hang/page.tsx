@@ -136,9 +136,7 @@ export default function TaoDonHangPage() {
     });
   };
 
-  // Parse error message to user-friendly format
   const parseErrorMessage = (error: string): string => {
-    // Mã khuyến mãi errors
     if (error.includes('Promotion code') && error.includes('not found')) {
       return 'Mã khuyến mãi không tồn tại hoặc đã hết hạn';
     }
@@ -151,29 +149,25 @@ export default function TaoDonHangPage() {
     if (error.includes('Promotion') && error.includes('expired')) {
       return 'Mã khuyến mãi đã hết hạn sử dụng';
     }
-    
-    // Session errors
+
     if (error.includes('Session') && error.includes('not found')) {
       return 'Phiên làm việc đã hết hạn. Vui lòng quét lại mã QR';
     }
     if (error.includes('Table') && error.includes('not available')) {
       return 'Bàn hiện không khả dụng. Vui lòng liên hệ nhân viên';
     }
-    
-    // Product errors
+
     if (error.includes('Product') && error.includes('not found')) {
       return 'Một số món ăn không còn trong thực đơn';
     }
     if (error.includes('out of stock')) {
       return 'Một số món ăn đã hết. Vui lòng chọn món khác';
     }
-    
-    // Validation errors
+
     if (error.includes('required') || error.includes('empty')) {
       return 'Vui lòng điền đầy đủ thông tin đơn hàng';
     }
-    
-    // Network/Server errors
+
     if (error.includes('network') || error.includes('Network')) {
       return 'Lỗi kết nối mạng. Vui lòng kiểm tra internet và thử lại';
     }
@@ -183,8 +177,7 @@ export default function TaoDonHangPage() {
     if (error.includes('timeout')) {
       return 'Yêu cầu quá lâu. Vui lòng thử lại';
     }
-    
-    // Default user-friendly message
+
     if (error.includes('API Error') || error.includes('error')) {
       return 'Không thể tạo đơn hàng. Vui lòng thử lại hoặc liên hệ nhân viên';
     }
@@ -196,19 +189,16 @@ export default function TaoDonHangPage() {
     return orderItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  // Calculate discount amount
   const calculateDiscount = () => {
     if (!appliedPromotion) return 0;
     const total = calculateTotal();
     return Math.floor((total * appliedPromotion.discountPercentage) / 100);
   };
 
-  // Calculate final total after discount
   const calculateFinalTotal = () => {
     return calculateTotal() - calculateDiscount();
   };
 
-  // Check and apply promotion code
   const checkPromotionCode = async () => {
     if (!promotionCode.trim()) {
       setAppliedPromotion(null);
