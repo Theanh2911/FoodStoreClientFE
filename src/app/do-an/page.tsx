@@ -49,8 +49,7 @@ export default function DoAnPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <DashboardNav />
-      
-      {/* AI Food Assistant */}
+
       <AIFoodAssistant allProducts={allProducts} />
       
       <main className="container mx-auto p-3 sm:p-4 lg:p-6">
@@ -73,7 +72,6 @@ export default function DoAnPage() {
           </Button>
         </div>
 
-        {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
@@ -81,7 +79,6 @@ export default function DoAnPage() {
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="flex items-center justify-center py-8">
             <AlertCircle className="h-8 w-8 text-red-600" />
@@ -96,7 +93,6 @@ export default function DoAnPage() {
           </div>
         )}
 
-        {/* Food Items Grid */}
         {!isLoading && !error && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {foodItems.length === 0 ? (
@@ -137,7 +133,6 @@ export default function DoAnPage() {
 
       </main>
 
-      {/* Promotion Floating Button */}
       <PromotionFloatingButton />
     </div>
   );

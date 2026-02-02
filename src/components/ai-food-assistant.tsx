@@ -117,7 +117,6 @@ export function AIFoodAssistant({ allProducts }: AIFoodAssistantProps) {
         }
       }
     } catch (error) {
-      // Fallback on any error
       const fallback = getFallbackDishes();
       setSuggestedDishes(fallback);
       setReason("Đây là những món phổ biến nhất của chúng tôi!");
