@@ -111,6 +111,7 @@ export interface UserOrder {
   orderId: number;
   customerName: string;
   tableNumber: number;
+  amount: number;
   totalAmount: number;
   orderTime: string;
   status: string;
@@ -334,7 +335,7 @@ class ApiService {
 
   async updatePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
     const token = localStorage.getItem('accessToken');
-    
+
     if (!token) {
       return {
         data: {} as { message: string },
@@ -364,7 +365,7 @@ class ApiService {
   // Create rating for an order
   async createRating(orderId: number, ratingData: FormData): Promise<ApiResponse<RatingResponse>> {
     const token = localStorage.getItem('accessToken');
-    
+
     if (!token) {
       return {
         data: {} as RatingResponse,

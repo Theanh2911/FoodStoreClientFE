@@ -284,9 +284,9 @@ export default function ThanhToanPage() {
     setSelectedOrder(null);
   };
 
-  const getOrderAmountInt = (totalAmount: number) => {
-    // totalAmount is always like xxxxx.x → drop decimal part
-    return Math.trunc(totalAmount);
+  const getOrderAmountInt = (amount: number) => {
+    // amount is always like xxxxx.x → drop decimal part
+    return Math.trunc(amount);
   };
 
   const isPaymentButtonDisabled = (order: UserOrder): boolean => {
@@ -305,7 +305,7 @@ export default function ThanhToanPage() {
   };
 
   const buildVietQrImageUrl = (order: UserOrder, bank: BankAccount) => {
-    const amount = getOrderAmountInt(order.totalAmount);
+    const amount = getOrderAmountInt(order.amount);
     const addInfo = `YHF${order.orderId}`;
     return `https://img.vietqr.io/image/${bank.bankName}-${bank.accountNumber}-compact.png?amount=${amount}&addInfo=${encodeURIComponent(addInfo)}`;
   };
@@ -374,7 +374,7 @@ export default function ThanhToanPage() {
 
                         <div className="flex items-center justify-between pt-3 border-t">
                           <div className="font-bold">
-                            Tổng: {order.totalAmount.toLocaleString("vi-VN")} VNĐ
+                            Tổng: {order.amount.toLocaleString("vi-VN")} VNĐ
                           </div>
                           <Button
                             className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
@@ -550,7 +550,7 @@ export default function ThanhToanPage() {
                   <div className="flex justify-between">
                     <span>Số tiền:</span>
                     <span className="font-semibold">
-                      {getOrderAmountInt(selectedOrder.totalAmount).toLocaleString("vi-VN")} VNĐ
+                      {getOrderAmountInt(selectedOrder.amount).toLocaleString("vi-VN")} VNĐ
                     </span>
                   </div>
                   <div className="flex justify-between">
